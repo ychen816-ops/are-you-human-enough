@@ -262,8 +262,14 @@
 
     .win-button--primary { background: var(--pink); }
     .win-button--verify { min-width: 128px; background: #72a9ff; }
+    .win-button--bot { color: #fff; background: #171717; }
     .win-button--danger { color: #fff; background: var(--red); }
     .win-button[disabled] { opacity: .48; }
+
+    .simulation-hint {
+      margin: 10px 0 0;
+      font: 700 .7rem/1.3 "Courier New", monospace;
+    }
 
     .test-window { width: min(810px, calc(100vw - 90px)); margin: 0 auto; }
     .test-window .window-body { padding: 13px 16px 16px; background: #dedede; }
@@ -368,6 +374,8 @@
     }
 
     .captcha-tile[aria-pressed="true"] .tile-check { display: grid; animation: check-pop .18s steps(2, end); }
+    .captcha-tile.is-auto-clicking { z-index: 4; outline: 7px solid var(--red); outline-offset: -7px; }
+    .captcha-tile:disabled { opacity: 1; }
     @keyframes check-pop { from { transform: translate(-50%, -50%) scale(.5); } }
 
     .captcha-actions { display: flex; justify-content: space-between; gap: 10px; }
@@ -734,6 +742,7 @@
     .monitor-screen .intro-copy { margin-bottom: 8px; font-size: .92rem; line-height: 1.3; }
     .monitor-screen .system-ready { margin-bottom: 8px; padding: 7px; }
     .monitor-screen .intro-window .win-button { min-height: 40px; padding-top: 6px; padding-bottom: 6px; }
+    .monitor-screen .simulation-hint { margin-top: 6px; font-size: .65rem; }
     .monitor-screen .test-window { width: min(810px, calc(100% - 10px)); }
     .monitor-screen .captcha-board { width: min(300px, 100%); }
     .monitor-screen .analysis-window { width: min(640px, calc(100% - 20px)); }
@@ -955,7 +964,9 @@
             <p class="system-ready"><span class="pixel-square" aria-hidden="true"></span> HUMAN.EXE is ready.</p>
             <div class="button-row">
               <button class="win-button win-button--primary" id="start-button" type="button">START TEST</button>
+              <button class="win-button win-button--bot" id="simulate-bot-button" type="button" aria-describedby="simulation-hint">SIMULATE BOT</button>
             </div>
+            <p class="simulation-hint" id="simulation-hint">Demo mode auto-selects the correct tiles and submits them at machine speed.</p>
           </div>
         </div>
       </section>
@@ -1080,20 +1091,21 @@
       baseRisk: 10,
       answer: {
         exactCorrect: -10,
-        perIncorrectSelection: 15,
-        perMissedCorrectTile: 15
+        perIncorrectSelection: 8,
+        perMissedCorrectTile: 8,
+        imperfectScoreCap: 60
       },
       completionTime: {
         ultraFastUnderSeconds: 2,
         ultraFastPoints: 25,
         fastThroughSeconds: 4,
-        fastPoints: 10,
+        fastPoints: 8,
         slowOverSeconds: 20,
         slowPoints: 10
       },
       firstClick: {
         suspiciousUnderSeconds: 0.25,
-        suspiciousPoints: 10
+        suspiciousPoints: 15
       },
       movement: {
         sampleIntervalMs: 50,
@@ -1101,10 +1113,13 @@
         limitedDistancePoints: 20,
         straightnessOver: 0.88,
         minimumDistanceForStraightnessPx: 80,
-        straightnessPoints: 15,
+        straightnessPoints: 10,
         naturalVariationCvAtLeast: 0.30,
         minimumSamplesForVariation: 8,
         naturalVariationPoints: -10
+      },
+      automationPattern: {
+        exactAndUltraFastPoints: 40
       },
       correction: {
         pointsEach: -5,
@@ -1116,6 +1131,11 @@
       },
       analysis: {
         stepDelayMs: 460
+      },
+      simulation: {
+        firstSelectionDelayMs: 80,
+        betweenSelectionsMs: 110,
+        beforeVerifyMs: 140
       }
     });
 
@@ -1166,6 +1186,7 @@
     const selectedTiles = new Set();
     let currentTestIndex = 0;
     let pendingResult = null;
+    let isSimulating = false;
     let metrics = freshMetrics();
     let history = loadHistory();
 
@@ -1184,7 +1205,8 @@
         lastSampleAt: 0,
         speeds: [],
         imageClicks: 0,
-        corrections: 0
+        corrections: 0,
+        simulated: false
       };
     }
 
@@ -1237,8 +1259,8 @@
       document.querySelector(".captcha-tile")?.focus();
     }
 
-    function toggleTile(button, index) {
-      if (!metrics.active) return;
+    function toggleTile(button, index, automated = false) {
+      if (!metrics.active || (isSimulating && !automated)) return;
       const wasSelected = selectedTiles.has(index);
       metrics.imageClicks += 1;
       if (metrics.firstImageClickAt === null) metrics.firstImageClickAt = performance.now();
@@ -1271,19 +1293,57 @@
       if (announce) announcer.textContent = "Selection cleared.";
     }
 
+    function setTestControlsDisabled(disabled) {
+      ["reset-button", "change-image-button", "verify-button", "simulate-bot-button"].forEach(id => {
+        document.getElementById(id).disabled = disabled;
+      });
+      [...grid.children].forEach(button => { button.disabled = disabled; });
+      grid.setAttribute("aria-busy", String(disabled));
+    }
+
     function startAttempt() {
+      isSimulating = false;
       resetSelection(false);
       metrics = freshMetrics();
       metrics.active = true;
       metrics.startedAt = performance.now();
       pendingResult = null;
-      document.body.classList.remove("is-analyzing");
+      document.body.classList.remove("is-analyzing", "is-simulating");
+      setTestControlsDisabled(false);
       document.getElementById("system-status").textContent = "TRACKING ACTIVE";
       showScreen("test-screen", ".captcha-tile");
     }
 
+    async function simulateBotAttempt() {
+      if (isSimulating) return;
+      startAttempt();
+      isSimulating = true;
+      metrics.simulated = true;
+      setTestControlsDisabled(true);
+      document.body.classList.add("is-simulating");
+      document.getElementById("system-status").textContent = "BOT DEMO: AUTO-SELECTING";
+      announcer.textContent = "Bot simulation started. Correct tiles will be selected automatically.";
+
+      await wait(RISK_CONFIG.simulation.firstSelectionDelayMs);
+      for (const [position, index] of currentTest().correctTiles.entries()) {
+        const button = grid.children[index];
+        button.classList.add("is-auto-clicking");
+        toggleTile(button, index, true);
+        document.getElementById("system-status").textContent = `BOT DEMO: CLICK ${position + 1}/${currentTest().correctTiles.length}`;
+        await wait(RISK_CONFIG.simulation.betweenSelectionsMs);
+        button.classList.remove("is-auto-clicking");
+      }
+
+      document.getElementById("system-status").textContent = "BOT DEMO: AUTO-VERIFY";
+      announcer.textContent = "All correct tiles selected. Submitting automatically.";
+      await wait(RISK_CONFIG.simulation.beforeVerifyMs);
+      document.body.classList.remove("is-simulating");
+      isSimulating = false;
+      await verifyAttempt();
+    }
+
     function sampleMouse(event) {
-      if (!metrics.active) return;
+      if (!metrics.active || metrics.simulated) return;
       const now = performance.now();
       if (now - metrics.lastSampleAt < RISK_CONFIG.movement.sampleIntervalMs) return;
 
@@ -1325,6 +1385,7 @@
       const correctTileDecisions = CAPTCHA_TILE_COUNT - incorrectSelections - missedCorrectTiles;
       const accuracy = (correctTileDecisions / CAPTCHA_TILE_COUNT) * 100;
       const exactCorrect = incorrectSelections === 0 && missedCorrectTiles === 0;
+      const ultraFast = completionSeconds < RISK_CONFIG.completionTime.ultraFastUnderSeconds;
       const directDistance = metrics.firstPoint && metrics.lastPoint
         ? Math.hypot(metrics.lastPoint.x - metrics.firstPoint.x, metrics.lastPoint.y - metrics.firstPoint.y)
         : 0;
@@ -1343,7 +1404,7 @@
       if (incorrectSelections > 0) apply(`${incorrectSelections} incorrect selection${incorrectSelections === 1 ? "" : "s"}`, incorrectSelections * RISK_CONFIG.answer.perIncorrectSelection);
       if (missedCorrectTiles > 0) apply(`${missedCorrectTiles} missed target tile${missedCorrectTiles === 1 ? "" : "s"}`, missedCorrectTiles * RISK_CONFIG.answer.perMissedCorrectTile);
 
-      if (completionSeconds < RISK_CONFIG.completionTime.ultraFastUnderSeconds) {
+      if (ultraFast) {
         apply("Unusually fast response", RISK_CONFIG.completionTime.ultraFastPoints);
       } else if (completionSeconds <= RISK_CONFIG.completionTime.fastThroughSeconds) {
         apply("Fast response", RISK_CONFIG.completionTime.fastPoints);
@@ -1359,6 +1420,10 @@
         apply("Very limited cursor movement", RISK_CONFIG.movement.limitedDistancePoints);
       }
 
+      if (exactCorrect && ultraFast) {
+        apply("Perfect answer at machine-like speed", RISK_CONFIG.automationPattern.exactAndUltraFastPoints);
+      }
+
       if (metrics.totalDistance >= RISK_CONFIG.movement.minimumDistanceForStraightnessPx && straightness > RISK_CONFIG.movement.straightnessOver) {
         apply("Cursor path was unusually straight", RISK_CONFIG.movement.straightnessPoints);
       }
@@ -1370,6 +1435,10 @@
 
       const naturalVariation = metrics.movementCount >= RISK_CONFIG.movement.minimumSamplesForVariation && speedVariation >= RISK_CONFIG.movement.naturalVariationCvAtLeast;
       if (naturalVariation) apply("Natural speed variation", RISK_CONFIG.movement.naturalVariationPoints);
+
+      if (!exactCorrect && score > RISK_CONFIG.answer.imperfectScoreCap) {
+        apply("Imperfect answer limits bot certainty", RISK_CONFIG.answer.imperfectScoreCap - score);
+      }
 
       score = Math.max(0, Math.min(100, Math.round(score)));
       const level = score <= RISK_CONFIG.classifications.lowMax ? "low" : score <= RISK_CONFIG.classifications.uncertainMax ? "uncertain" : "high";
@@ -1390,6 +1459,7 @@
         missedCorrectTiles,
         accuracy,
         exactCorrect,
+        ultraFast,
         straightness,
         speedVariation,
         averageSpeed,
@@ -1398,6 +1468,7 @@
         movementCount: metrics.movementCount,
         totalDistance: metrics.totalDistance,
         corrections: metrics.corrections,
+        simulated: metrics.simulated,
         correctTileDecisions,
         testId: currentTest().id
       };
@@ -1408,7 +1479,7 @@
       metrics.verifiedAt = performance.now();
       metrics.active = false;
       pendingResult = calculateResult();
-      document.getElementById("verify-button").disabled = true;
+      setTestControlsDisabled(true);
       document.body.classList.add("is-analyzing");
       document.getElementById("system-status").textContent = "ANALYZING...";
       showScreen("analysis-screen", "#analysis-title");
@@ -1416,7 +1487,7 @@
       saveAttempt(pendingResult);
       renderResult(pendingResult);
       document.body.classList.remove("is-analyzing");
-      document.getElementById("verify-button").disabled = false;
+      setTestControlsDisabled(false);
       document.getElementById("system-status").textContent = "RESULT READY";
       showScreen("result-screen", "#result-classification");
     }
@@ -1472,12 +1543,15 @@
       const positivePoints = result.reasons.filter(reason => reason.delta > 0 && reason.label !== "Base risk").reduce((sum, reason) => sum + reason.delta, 0);
       const negativePoints = Math.abs(result.reasons.filter(reason => reason.delta < 0).reduce((sum, reason) => sum + reason.delta, 0));
       const meaningByLevel = {
-        low: "Your traces matched this model's narrow idea of human behavior.",
-        uncertain: "Your traces did not clearly match either side of this model.",
-        high: "Your traces matched rules this model labels as bot-like."
+        low: "A correct answer at a plausible pace fits this model's human-like range.",
+        uncertain: result.exactCorrect
+          ? "The answer was correct, but the behavioral traces were mixed."
+          : "An imperfect answer indicates task failure, not proof of automation.",
+        high: "A perfect answer submitted at machine-like speed triggered the bot-like pattern."
       };
-      document.getElementById("result-saw").textContent = `${result.correctTileDecisions} of 9 tile decisions matched the answer key; ${Math.round(result.totalDistance)} px of cursor movement was sampled.`;
-      document.getElementById("result-scored").textContent = `Starting from 10, triggered rules added ${positivePoints} points and removed ${negativePoints} points; the total was capped at 0–100.`;
+      const runDescription = result.simulated ? "BOT DEMO auto-selected the answer." : "The attempt was completed manually.";
+      document.getElementById("result-saw").textContent = `${runDescription} ${result.correctTileDecisions} of 9 tile decisions matched; completion took ${result.completionSeconds.toFixed(2)} s.`;
+      document.getElementById("result-scored").textContent = `Starting from ${RISK_CONFIG.baseRisk}, triggered rules added ${positivePoints} points and removed ${negativePoints} points; imperfect answers cannot exceed ${RISK_CONFIG.answer.imperfectScoreCap}.`;
       document.getElementById("result-means").textContent = meaningByLevel[result.level];
 
       const metricRows = [
@@ -1547,9 +1621,11 @@
 
     function goHome() {
       metrics.active = false;
+      isSimulating = false;
       pendingResult = null;
       resetSelection(false);
-      document.body.classList.remove("is-analyzing");
+      document.body.classList.remove("is-analyzing", "is-simulating");
+      setTestControlsDisabled(false);
       document.getElementById("system-status").textContent = "SYSTEM READY";
       showScreen("intro-screen", "#start-button");
       announcer.textContent = "Returned to the home screen.";
@@ -1588,6 +1664,7 @@
     }
 
     document.getElementById("start-button").addEventListener("click", startAttempt);
+    document.getElementById("simulate-bot-button").addEventListener("click", simulateBotAttempt);
     document.getElementById("try-again-button").addEventListener("click", startAttempt);
     document.getElementById("reset-button").addEventListener("click", () => resetSelection(true));
     document.getElementById("change-image-button").addEventListener("click", changeTestImage);
