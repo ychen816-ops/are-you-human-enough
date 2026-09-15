@@ -3,1681 +3,610 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A classroom CAPTCHA risk simulator about how systems turn behavior into scores and classifications.">
-  <title>Are You Human Enough? — CAPTCHA Risk Simulator</title>
+  <meta name="description" content="A mechanism-visible CAPTCHA risk simulator for classroom research.">
+  <title>Are You Human Enough? — V1</title>
   <style>
     :root {
-      --ink: #050505;
-      --desktop: #79c9e8;
-      --pink: #ff8fd1;
-      --pink-dark: #d63891;
-      --blue: #001c91;
-      --blue-bright: #2458ff;
-      --silver: #c6c6c6;
-      --silver-light: #ffffff;
-      --silver-mid: #868686;
-      --silver-dark: #202020;
-      --yellow: #fff200;
-      --red: #d81818;
-      --green: #087a32;
-      --space-1: 4px;
-      --space-2: 8px;
-      --space-3: 16px;
-      --space-4: 24px;
-      --space-5: 32px;
-      --win-shadow: inset -2px -2px 0 var(--silver-dark), inset 2px 2px 0 var(--silver-light), inset -4px -4px 0 var(--silver-mid), inset 4px 4px 0 #dedede;
-      --button-shadow: inset -2px -2px 0 #121212, inset 2px 2px 0 #fff, inset -4px -4px 0 #7f7f7f;
-      --z-base: 1;
-      --z-window: 10;
-      --z-history: 20;
-      --z-dialog: 40;
-      --z-taskbar: 100;
-      --z-cursor: 1000;
+      --ink: #090d09;
+      --green-950: #031009;
+      --green-900: #082014;
+      --green-800: #123c24;
+      --green-600: #168c45;
+      --green-400: #42e477;
+      --green-200: #bfffcf;
+      --paper: #f3f3e9;
+      --silver: #c8c8c0;
+      --silver-dark: #77796f;
+      --white: #fff;
+      --warning: #e9ff42;
+      --danger: #f04a38;
+      --shadow: 5px 5px 0 #000;
+      --raised: inset 2px 2px 0 #fff, inset -2px -2px 0 #5f615a;
+      --sunken: inset 2px 2px 0 #5f615a, inset -2px -2px 0 #fff;
+      --font-mono: "Courier New", Courier, monospace;
+      --font-sans: Arial, Helvetica, sans-serif;
     }
 
     * { box-sizing: border-box; }
-
-    html { min-height: 100%; background: var(--desktop); }
-
+    html { min-width: 320px; background: var(--green-950); }
     body {
-      min-width: 320px;
-      min-height: 100dvh;
+      min-height: 100vh;
       margin: 0;
       overflow-x: hidden;
       color: var(--ink);
-      background: #65bdf4 url("assets/desktop-background.jpg") center / cover fixed no-repeat;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 16px;
-      line-height: 1.45;
-      image-rendering: auto;
+      background:
+        linear-gradient(rgba(66, 228, 119, .055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(66, 228, 119, .055) 1px, transparent 1px),
+        radial-gradient(circle at 14% 8%, #245e36 0, #0d2416 34%, #050b07 75%);
+      background-size: 32px 32px, 32px 32px, auto;
+      font-family: var(--font-sans);
     }
 
     body::after {
       position: fixed;
+      z-index: 1000;
       inset: 0;
-      z-index: 900;
       pointer-events: none;
       content: "";
-      opacity: .16;
-      background: repeating-linear-gradient(0deg, rgba(0,0,0,.20) 0, rgba(0,0,0,.20) 1px, transparent 1px, transparent 4px);
-      mix-blend-mode: multiply;
+      opacity: .13;
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 1px, transparent 1px 4px);
+      mix-blend-mode: soft-light;
     }
 
-    button { font: inherit; touch-action: manipulation; }
+    button { font: inherit; }
+    button:not(:disabled) { cursor: pointer; }
+    button:focus-visible, a:focus-visible { outline: 4px solid var(--warning); outline-offset: 3px; }
+    [hidden] { display: none !important; }
 
-    button:focus-visible,
-    [tabindex]:focus-visible {
-      outline: 3px solid var(--yellow);
-      outline-offset: 3px;
-    }
+    .skip-link { position: fixed; z-index: 2000; top: 8px; left: 8px; padding: 8px 12px; color: #000; background: var(--warning); font: 700 .85rem var(--font-mono); transform: translateY(-150%); }
+    .skip-link:focus { transform: none; }
+    .app { width: min(1480px, calc(100% - 28px)); margin: 0 auto; padding: 22px 0 46px; }
+    .masthead { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 18px; color: var(--white); }
+    .kicker, .subhead, .system-state { font-family: var(--font-mono); }
+    .kicker { margin: 0 0 3px; color: var(--green-400); font-size: .76rem; font-weight: 700; letter-spacing: .14em; }
+    h1 { max-width: 980px; margin: 0; color: var(--paper); font-size: clamp(3.1rem, 7vw, 7rem); line-height: .75; letter-spacing: -.095em; text-transform: uppercase; text-shadow: 6px 6px 0 #000; }
+    h1 span { color: var(--green-400); -webkit-text-stroke: 2px #000; }
+    .subhead { margin: 12px 0 0; color: var(--green-200); font-size: .82rem; }
+    .system-state { flex: 0 0 auto; margin-bottom: 4px; padding: 10px 12px; border: 2px solid var(--green-400); color: var(--green-400); background: #000; box-shadow: 4px 4px 0 rgba(66,228,119,.25); font-size: .76rem; font-weight: 700; }
+    .system-state::before { content: "● "; animation: blink 1.5s steps(2, end) infinite; }
 
-    .skip-link {
-      position: fixed;
-      top: 6px;
-      left: 6px;
-      z-index: 1100;
-      padding: 8px 12px;
-      color: #fff;
-      background: #000;
-      transform: translateY(-160%);
-    }
+    .workspace { display: grid; grid-template-columns: minmax(590px, 1.15fr) minmax(390px, .85fr); grid-template-areas: "challenge telemetry" "rules rules"; gap: 18px; align-items: start; }
+    .challenge-column { grid-area: challenge; }
+    .telemetry-column { display: grid; grid-area: telemetry; gap: 18px; }
+    .rules-window { grid-area: rules; }
 
-    .skip-link:focus { transform: translateY(0); }
+    .window { border: 3px solid #000; background: var(--silver); box-shadow: var(--shadow), var(--raised); }
+    .titlebar { display: flex; min-height: 34px; align-items: center; justify-content: space-between; gap: 12px; margin: 5px 5px 0; padding: 5px 8px; color: #fff; background: var(--green-800); font: 700 .79rem var(--font-mono); letter-spacing: .055em; }
+    .titlebar__buttons { color: #000; background: var(--silver); box-shadow: var(--raised); padding: 1px 5px; }
+    .window-body { margin: 5px; border: 2px solid var(--silver-dark); background: var(--paper); }
 
-    .desktop {
-      position: relative;
-      min-height: calc(100dvh - 42px);
-      padding-bottom: 44px;
-      isolation: isolate;
-    }
+    .challenge-window { min-height: 650px; }
+    .challenge-window > .window-body { min-height: 600px; padding: 20px; }
+    .view { min-height: 556px; }
+    .intro-view { display: grid; align-content: center; justify-items: start; padding: clamp(20px, 5vw, 64px); background: linear-gradient(90deg, transparent 49%, rgba(22,140,69,.12) 50% 51%, transparent 52%), linear-gradient(transparent 49%, rgba(22,140,69,.12) 50% 51%, transparent 52%); background-size: 24px 24px; }
+    .intro-view h2 { max-width: 620px; margin: 0 0 12px; font-size: clamp(2rem, 4vw, 4.5rem); line-height: .9; letter-spacing: -.06em; }
+    .intro-view p { max-width: 580px; margin: 0 0 18px; font: 700 .88rem/1.55 var(--font-mono); }
+    .terminal-line { width: 100%; padding: 10px; color: var(--green-400); background: #000; box-shadow: var(--sunken); }
+    .button-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hint { margin-top: 13px !important; color: #394039; font-size: .72rem !important; }
 
-    .desktop::before {
-      position: fixed;
-      inset: 12% auto auto -6%;
-      z-index: -1;
-      width: 42vw;
-      height: 42vw;
-      min-width: 420px;
-      min-height: 420px;
-      content: "";
-      display: none;
-      opacity: .64;
-      background: var(--pink);
-      clip-path: polygon(50% 0, 60% 35%, 88% 11%, 70% 42%, 100% 50%, 69% 59%, 89% 88%, 59% 70%, 50% 100%, 41% 70%, 10% 89%, 31% 59%, 0 50%, 31% 41%, 10% 11%, 41% 34%);
-    }
+    .win-button { min-height: 44px; padding: 8px 17px; border: 2px solid #1b1c19; color: #000; background: var(--silver); box-shadow: var(--raised), 3px 3px 0 #000; font: 700 .8rem var(--font-mono); letter-spacing: .035em; }
+    .win-button:active:not(:disabled) { box-shadow: var(--sunken); transform: translate(2px, 2px); }
+    .win-button:disabled { opacity: .5; cursor: not-allowed; }
+    .win-button--primary { background: var(--green-400); }
+    .win-button--verify { min-width: 132px; color: #fff; background: var(--green-800); }
+    .win-button--bot { color: #fff; background: #101410; }
+    .tiny-button { min-height: 32px; padding: 4px 8px; font-size: .68rem; }
 
-    .status-corner {
-      position: fixed;
-      top: 18px;
-      z-index: 30;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
-      border: 2px solid #000;
-      background: var(--yellow);
-      font-family: "Courier New", monospace;
-      font-size: .78rem;
-      font-weight: 700;
-      letter-spacing: .08em;
-      box-shadow: 4px 4px 0 #000;
-    }
-
-    .status-corner--left { left: 20px; }
-    .status-corner--right { right: 20px; background: #fff; }
-
-    .status-light {
-      width: 10px;
-      height: 10px;
-      border: 1px solid #000;
-      background: #00b843;
-      box-shadow: 0 0 0 2px rgba(0,184,67,.22);
-      animation: status-blink 2.4s steps(2, end) infinite;
-    }
-
-    @keyframes status-blink { 50% { opacity: .35; } }
-
-    .screen {
-      display: none;
-      position: relative;
-      min-height: calc(100dvh - 42px);
-      padding: 72px 350px 96px 48px;
-    }
-
-    .screen.is-active { display: block; }
-
-    .hero-title {
-      position: relative;
-      z-index: 14;
-      width: min(840px, 70vw);
-      margin: 28px 0 -32px 2vw;
-      font-size: clamp(4.2rem, 7.8vw, 7.8rem);
-      line-height: .77;
-      letter-spacing: -.09em;
-      text-wrap: balance;
-    }
-
-    .hero-title .question {
-      display: inline-block;
-      color: #fff;
-      -webkit-text-stroke: 3px #000;
-      text-shadow: 6px 6px 0 var(--pink);
-      transform: rotate(-2deg);
-    }
-
-    .win-window {
-      position: relative;
-      z-index: var(--z-window);
-      border: 2px solid #000;
-      background: var(--silver);
-      box-shadow: var(--win-shadow), 10px 10px 0 rgba(0,0,0,.44);
-    }
-
-    .titlebar {
-      display: flex;
-      min-height: 34px;
-      align-items: center;
-      justify-content: space-between;
-      margin: 5px 5px 0;
-      padding: 5px 7px;
-      color: #fff;
-      background: var(--blue);
-      font-family: "Courier New", monospace;
-      font-size: .85rem;
-      font-weight: 700;
-      letter-spacing: .05em;
-    }
-
-    .titlebar__controls { display: flex; gap: 4px; }
-
-    .titlebar-button {
-      display: grid;
-      width: 24px;
-      min-width: 24px;
-      height: 24px;
-      padding: 0;
-      place-items: center;
-      border: 0;
-      color: #000;
-      background: var(--silver);
-      box-shadow: var(--button-shadow);
-      font-weight: 900;
-      line-height: 1;
-    }
-
-    .titlebar-button:active,
-    .win-button:active { box-shadow: inset 2px 2px 0 #222, inset -2px -2px 0 #fff; }
-
-    .window-body { margin: 4px; padding: 26px; border: 2px solid #848484; background: #eee; }
-
-    .intro-window { width: min(570px, 78vw); margin-left: 17vw; }
-    .intro-window .window-body { padding: 34px; }
-
-    .eyebrow {
-      margin: 0 0 8px;
-      font-family: "Courier New", monospace;
-      font-size: .8rem;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .subtitle {
-      max-width: 480px;
-      margin: 0 0 20px;
-      font-size: clamp(1.4rem, 2.2vw, 2.15rem);
-      line-height: 1.05;
-    }
-
-    .intro-copy { max-width: 480px; margin: 0 0 24px; font-size: 1.05rem; }
-
-    .system-ready {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 18px;
-      padding: 10px;
-      border: 2px inset #fff;
-      background: #000;
-      color: #43ff72;
-      font-family: "Courier New", monospace;
-      font-size: .86rem;
-    }
-
-    .pixel-square { width: 11px; height: 11px; background: currentColor; box-shadow: 4px 4px 0 rgba(255,255,255,.38); }
-
-    .button-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-
-    .win-button {
-      min-height: 46px;
-      padding: 9px 20px;
-      border: 0;
-      color: #000;
-      background: var(--silver);
-      box-shadow: var(--button-shadow);
-      font-family: "Courier New", monospace;
-      font-weight: 700;
-      letter-spacing: .04em;
-    }
-
-    .win-button--primary { background: var(--pink); }
-    .win-button--verify { min-width: 128px; background: #72a9ff; }
-    .win-button--bot { color: #fff; background: #171717; }
-    .win-button--danger { color: #fff; background: var(--red); }
-    .win-button[disabled] { opacity: .48; }
-
-    .simulation-hint {
-      margin: 10px 0 0;
-      font: 700 .7rem/1.3 "Courier New", monospace;
-    }
-
-    .test-window { width: min(810px, calc(100vw - 90px)); margin: 0 auto; }
-    .test-window .window-body { padding: 13px 16px 16px; background: #dedede; }
-
-    .captcha-workspace {
-      display: grid;
-      grid-template-columns: minmax(220px, 1fr) 300px;
-      gap: 16px;
-      align-items: start;
-    }
-
-    .captcha-copy-column { display: flex; min-height: 300px; flex-direction: column; }
-    .captcha-image-column { min-width: 0; }
-
-    .captcha-head {
-      display: block;
-      margin: 0;
-      padding: 16px;
-      border: 2px solid #000;
-      background: var(--blue);
-      color: #fff;
-    }
-
-    .captcha-head p { margin: 0; font-family: "Courier New", monospace; }
-    .captcha-head strong { display: block; max-width: 430px; margin-top: 7px; font-size: 1.28rem; line-height: 1.15; }
-
-    .captcha-count {
-      display: inline-block;
-      padding: 5px 8px;
-      margin-top: 18px;
-      border: 2px solid #fff;
-      color: var(--yellow);
-      font-family: "Courier New", monospace;
-      font-weight: 700;
-    }
-
-    .captcha-board {
-      position: relative;
-      width: min(300px, 100%);
-      margin: 0 auto 12px;
-      aspect-ratio: 1;
-      overflow: hidden;
-      border: 4px solid #000;
-      background: #fff;
-      box-shadow: 5px 5px 0 var(--pink-dark);
-    }
-
-    .captcha-board > img { display: block; width: 100%; height: 100%; object-fit: cover; }
-
-    .captcha-grid {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-    }
-
-    .captcha-tile {
-      position: relative;
-      min-width: 0;
-      min-height: 0;
-      padding: 0;
-      border: 1px solid rgba(255,255,255,.82);
-      background: transparent;
-      color: #fff;
-    }
-
-    .captcha-tile::after {
-      position: absolute;
-      inset: 4px;
-      content: "";
-      border: 0 solid transparent;
-      background: transparent;
-    }
-
-    .captcha-tile[aria-pressed="true"]::after {
-      border-width: 6px;
-      border-color: var(--blue-bright);
-      background: rgba(255,75,180,.22);
-      box-shadow: inset 0 0 0 3px #fff;
-    }
-
-    .captcha-tile:focus-visible { z-index: 3; outline: 5px solid var(--yellow); outline-offset: -6px; }
-
-    .tile-check {
-      position: absolute;
-      z-index: 2;
-      top: 50%;
-      left: 50%;
-      display: none;
-      width: 42px;
-      height: 42px;
-      place-items: center;
-      border: 3px solid #000;
-      background: var(--pink);
-      color: #000;
-      font-family: "Courier New", monospace;
-      font-size: 1.8rem;
-      font-weight: 900;
-      transform: translate(-50%, -50%);
-      box-shadow: 4px 4px 0 #000;
-    }
-
-    .captcha-tile[aria-pressed="true"] .tile-check { display: grid; animation: check-pop .18s steps(2, end); }
-    .captcha-tile.is-auto-clicking { z-index: 4; outline: 7px solid var(--red); outline-offset: -7px; }
+    .test-view { display: grid; align-content: start; }
+    .test-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 10px 12px; color: var(--green-200); background: var(--green-950); font: 700 .72rem var(--font-mono); }
+    .test-layout { display: grid; grid-template-columns: minmax(330px, 1fr) 230px; gap: 18px; align-items: start; }
+    .captcha-board { position: relative; width: min(470px, 100%); margin: 0 auto; overflow: hidden; aspect-ratio: 1; border: 4px solid #000; background: #fff; box-shadow: 7px 7px 0 var(--green-600); }
+    .captcha-board > img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; }
+    .captcha-grid { position: absolute; inset: 0; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); }
+    .captcha-tile { position: relative; min-width: 0; min-height: 0; padding: 0; border: 1px solid rgba(255,255,255,.9); background: transparent; }
+    .captcha-tile::after { position: absolute; inset: 4px; content: ""; border: 0 solid transparent; }
+    .captcha-tile[aria-pressed="true"]::after { border: 6px solid var(--green-400); background: rgba(66,228,119,.2); box-shadow: inset 0 0 0 3px #fff; }
+    .captcha-tile:focus-visible { z-index: 4; outline: 6px solid var(--warning); outline-offset: -7px; }
+    .captcha-tile.is-auto-clicking { z-index: 5; outline: 7px solid var(--danger); outline-offset: -7px; }
     .captcha-tile:disabled { opacity: 1; }
-    @keyframes check-pop { from { transform: translate(-50%, -50%) scale(.5); } }
+    .tile-check { position: absolute; z-index: 3; top: 50%; left: 50%; display: none; width: 42px; height: 42px; place-items: center; border: 3px solid #000; color: #000; background: var(--warning); box-shadow: 4px 4px 0 #000; font: 900 1.7rem var(--font-mono); transform: translate(-50%, -50%); }
+    .captcha-tile[aria-pressed="true"] .tile-check { display: grid; animation: pop .16s steps(2, end); }
 
-    .captcha-actions { display: flex; justify-content: space-between; gap: 10px; }
-    .captcha-actions .win-button { min-height: 40px; padding: 7px 16px; }
-    .captcha-note { margin: auto 0 0; padding: 10px; border: 2px inset #fff; background: #f5f5f5; font-family: "Courier New", monospace; font-size: .75rem; line-height: 1.3; }
+    .challenge-controls { display: grid; gap: 11px; }
+    .instruction-box { padding: 14px; border: 3px solid #000; color: #fff; background: var(--green-800); }
+    .instruction-box span { display: block; margin-bottom: 7px; color: var(--green-200); font: 700 .68rem var(--font-mono); }
+    .instruction-box strong { display: block; font-size: 1.18rem; line-height: 1.08; }
+    .selection-status { padding: 9px; border: 2px solid #000; background: var(--warning); font: 700 .75rem var(--font-mono); text-align: center; }
+    .control-stack { display: grid; gap: 9px; }
+    .control-stack .win-button { width: 100%; }
+    .test-switcher { padding: 9px; border: 2px solid #777; background: #fff; font: 700 .68rem/1.35 var(--font-mono); text-align: center; }
+    .test-switcher strong { display: block; margin-bottom: 7px; }
+    .privacy-note { margin: 0; padding: 9px; border: 2px inset #fff; font: .66rem/1.35 var(--font-mono); }
 
-    .analysis-window { width: min(660px, calc(100vw - 420px)); margin: 10vh auto 0; }
-    .analysis-window .window-body { padding: 34px; }
+    .analysis-view { display: grid; align-content: center; padding: 34px; }
+    .analysis-view h2 { margin: 0 0 7px; font-size: 2rem; letter-spacing: -.05em; }
+    .analysis-view p { margin: 0 0 18px; font: 700 .8rem var(--font-mono); }
+    .segment-bar { display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; min-height: 32px; padding: 5px; border: 3px inset #fff; background: #fff; }
+    .segment { background: #a7aaa2; }
+    .segment.is-filled { background: var(--green-400); }
+    .analysis-log { min-height: 84px; margin-top: 12px; padding: 9px; color: var(--green-200); background: #000; font: .7rem/1.5 var(--font-mono); }
 
-    .analysis-heading { margin: 0 0 8px; font-size: 2rem; letter-spacing: -.04em; }
-    .analysis-copy { margin: 0 0 22px; font-family: "Courier New", monospace; }
+    .result-view { padding: 6px; }
+    .result-banner { display: grid; grid-template-columns: 120px 1fr 112px; gap: 16px; align-items: center; padding: 14px; border: 3px solid #000; color: #fff; background: var(--green-800); box-shadow: 5px 5px 0 #000; }
+    .result-banner[data-level="uncertain"] { color: #000; background: var(--warning); }
+    .result-banner[data-level="high"] { background: var(--danger); }
+    .score-number { font: 900 3.8rem/.8 var(--font-mono); }
+    .score-caption, .result-label { font: 700 .66rem var(--font-mono); }
+    .result-banner h2 { margin: 0 0 5px; font-size: 1.75rem; line-height: 1; }
+    .result-banner p { margin: 0; font: 700 .74rem var(--font-mono); }
+    .result-avatar { width: 98px; height: 98px; border: 3px solid currentColor; background: #fff url("assets/avatar-states.png") no-repeat; background-size: 300% auto; background-position-y: center; image-rendering: pixelated; }
+    .result-avatar[data-avatar="human"] { background-position-x: left; }
+    .result-avatar[data-avatar="uncertain"] { background-position-x: center; }
+    .result-avatar[data-avatar="bot"] { background-position-x: right; }
+    .result-summary { margin: 14px 0; padding: 12px; border: 2px solid #000; background: #fff; font: 700 .76rem/1.45 var(--font-mono); }
+    .result-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 0 0 14px; }
+    .result-metrics div { padding: 8px; border: 2px solid #666; background: #ecece5; }
+    .result-metrics dt { margin-bottom: 4px; font: 700 .6rem var(--font-mono); }
+    .result-metrics dd { margin: 0; font: 700 .86rem var(--font-mono); }
 
-    .segment-bar {
-      display: grid;
-      grid-template-columns: repeat(20, 1fr);
-      gap: 4px;
-      min-height: 34px;
-      padding: 5px;
-      border: 3px inset #fff;
-      background: #fff;
+    .tracker-window .window-body { padding: 10px; background: #07150c; }
+    .monitor-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: var(--green-200); font: 700 .67rem var(--font-mono); }
+    .rec-state { padding: 3px 6px; border: 1px solid currentColor; }
+    .rec-state[data-state="rec"] { color: #ff5b4a; animation: blink 1s steps(2, end) infinite; }
+    .rec-state[data-state="frozen"] { color: var(--warning); animation: none; }
+    .tracker-stage { position: relative; overflow: hidden; aspect-ratio: 16/9; border: 2px solid var(--green-600); background: var(--green-950); box-shadow: var(--sunken); }
+    #tracker-canvas { display: block; width: 100%; height: 100%; }
+    .canvas-caption { margin: 7px 0 0; color: #86c99a; font: .61rem/1.35 var(--font-mono); }
+    .live-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 9px; }
+    .live-metric { min-width: 0; padding: 7px 5px; border: 1px solid var(--green-600); color: var(--green-200); background: #020805; text-align: center; }
+    .live-metric span { display: block; margin-bottom: 3px; color: #72a57f; font: 700 .56rem var(--font-mono); }
+    .live-metric strong { display: block; overflow-wrap: anywhere; font: 700 .74rem var(--font-mono); }
+
+    .log-window .window-body { position: relative; padding: 0; background: #030704; }
+    .log-toolbar { display: flex; min-height: 32px; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 7px; border-bottom: 1px solid #35563d; color: #84a98d; font: .61rem var(--font-mono); }
+    .activity-log { height: 235px; margin: 0; padding: 9px 10px 10px 28px; overflow-y: auto; color: var(--green-200); background: #030704; font: .66rem/1.55 var(--font-mono); scrollbar-color: var(--green-600) #000; }
+    .activity-log li { padding-left: 3px; }
+    .activity-log time { color: var(--green-400); }
+    .jump-latest { color: #000; background: var(--warning); }
+
+    .rules-window .window-body { display: grid; grid-template-columns: 1.05fr .95fr; gap: 14px; padding: 14px; }
+    .rules-intro { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 2px solid #777; }
+    .rules-intro p { margin: 0; font: 700 .72rem/1.4 var(--font-mono); }
+    .tag { display: inline-block; padding: 3px 6px; border: 1px solid #000; font: 700 .59rem var(--font-mono); }
+    .tag--observed { background: #fff; }
+    .tag--scoring { background: var(--green-200); }
+    .rule-panel { min-width: 0; border: 2px solid #666; background: #fff; }
+    .rule-panel h3 { margin: 0; padding: 7px 9px; color: #fff; background: var(--green-800); font: 700 .73rem var(--font-mono); }
+    .rule-list, .reason-list, .input-list { margin: 0; padding: 8px 10px; list-style: none; }
+    .rule-list li, .reason-list li, .input-list li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px dotted #9a9a92; font: .66rem/1.35 var(--font-mono); }
+    .rule-list li:last-child, .reason-list li:last-child, .input-list li:last-child { border-bottom: 0; }
+    .rule-value { flex: 0 0 auto; font-weight: 700; }
+    .actual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .actual-grid .rule-panel { min-height: 220px; }
+    .placeholder { padding: 12px; color: #50554e; font: .68rem/1.5 var(--font-mono); }
+    .delta-positive { color: #a5150b; font-weight: 700; }
+    .delta-negative { color: #08712f; font-weight: 700; }
+
+    .dog-reaction { position: fixed; z-index: 900; width: min(260px, calc(100vw - 24px)); padding: 4px; border: 3px solid #000; background: var(--silver); box-shadow: 8px 8px 0 rgba(0,0,0,.65), var(--raised); opacity: 0; pointer-events: none; transform: translateY(28px) scale(.9); transition: opacity .2s steps(2, end), transform .28s steps(3, end); }
+    .dog-reaction.is-visible { opacity: 1; pointer-events: auto; transform: none; }
+    .dog-titlebar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 6px; color: #fff; background: var(--green-800); font: 700 .63rem var(--font-mono); }
+    .dog-close { width: 24px; height: 24px; padding: 0; border: 0; background: var(--silver); box-shadow: var(--raised); font-weight: 900; }
+    .dog-image { display: block; width: 100%; height: 180px; object-fit: contain; background: #fff; transition: transform .18s steps(2, end); }
+    .dog-reaction.is-nudging .dog-image { transform: scale(1.045); }
+    .dog-caption { margin: 0; padding: 8px; border-top: 2px solid #000; background: #fff; font: 700 .72rem/1.3 var(--font-mono); }
+    .dog-reaction[data-kind="golden"] { bottom: 0; left: 18px; transform: translateY(72%); }
+    .dog-reaction[data-kind="golden"].is-visible { transform: translateY(0); }
+    .dog-reaction[data-kind="chihuahua"] { top: 16%; right: 22px; }
+    .dog-reaction[data-kind="chihuahua"].is-visible .dog-image { animation: shake .38s steps(4, end) 2; }
+    .dog-reaction[data-kind="dachshund"] { right: 22px; bottom: 20px; transform: rotate(7deg) translateY(25px); }
+    .dog-reaction[data-kind="dachshund"].is-visible { transform: rotate(3deg); }
+    .dog-reaction[data-kind="shiba"] { right: 42%; bottom: 28px; width: 230px; }
+    .dog-reaction[data-kind="husky"] { top: 43%; right: 18px; }
+    .dog-reaction[data-kind="pomeranian"] { left: 18px; bottom: 18px; }
+
+    .pixel-cursor { position: fixed; z-index: 1100; top: -4px; left: -4px; width: 38px; height: 46px; pointer-events: none; opacity: 0; transform: translate3d(-100px,-100px,0); }
+    .pixel-cursor.is-visible { opacity: 1; }
+    .pixel-cursor svg { display: block; width: 100%; height: 100%; filter: drop-shadow(2px 2px 0 #fff); }
+    .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
+
+    @keyframes blink { 50% { opacity: .35; } }
+    @keyframes pop { from { transform: translate(-50%, -50%) scale(.55); } }
+    @keyframes shake { 25% { transform: translateX(-5px) rotate(-2deg); } 75% { transform: translateX(5px) rotate(2deg); } }
+
+    @media (max-width: 1040px) {
+      .workspace { grid-template-columns: 1fr; grid-template-areas: "challenge" "telemetry" "rules"; }
+      .telemetry-column { grid-template-columns: 1fr 1fr; }
+      .tracker-stage { aspect-ratio: 4/3; }
+      .dog-reaction[data-kind="shiba"] { right: 18px; }
     }
 
-    .segment { background: #c9c9c9; }
-    .segment.is-filled { background: var(--blue-bright); }
-
-    .analysis-log { min-height: 154px; margin: 22px 0 0; padding: 14px; border: 2px inset #fff; background: #050505; color: #63ff7f; font-family: "Courier New", monospace; font-size: .9rem; }
-    .analysis-line { margin: 0 0 4px; }
-    .analysis-line::before { content: "> "; color: #fff; }
-
-    .result-window { width: min(790px, calc(100vw - 420px)); margin: 0 auto; }
-    .result-window .window-body { padding: 22px; }
-
-    .result-banner {
-      display: grid;
-      grid-template-columns: 150px 1fr;
-      gap: 22px;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 18px;
-      border: 3px solid #000;
-      color: #fff;
-      background: var(--green);
-      box-shadow: 6px 6px 0 #000;
+    @media (max-width: 760px) {
+      .app { width: min(100% - 16px, 680px); padding-top: 12px; }
+      .masthead { display: block; }
+      h1 { font-size: clamp(3rem, 16vw, 5rem); }
+      .system-state { display: inline-block; margin-top: 14px; }
+      .challenge-window, .challenge-window > .window-body, .view { min-height: 0; }
+      .test-layout, .rules-window .window-body, .actual-grid, .telemetry-column { grid-template-columns: 1fr; }
+      .captcha-board { width: min(440px, 100%); }
+      .result-banner { grid-template-columns: 90px 1fr; }
+      .result-avatar { display: none; }
+      .result-metrics { grid-template-columns: repeat(2, 1fr); }
+      .rules-intro { align-items: start; flex-direction: column; }
+      .dog-reaction { right: 12px !important; bottom: 12px !important; left: auto !important; top: auto !important; }
     }
 
-    .result-banner[data-level="uncertain"] { color: #000; background: var(--yellow); }
-    .result-banner[data-level="high"] { background: var(--red); }
-
-    .score-block { text-align: center; border-right: 2px solid currentColor; }
-    .score-block strong { display: block; font-size: 4.2rem; line-height: .9; font-variant-numeric: tabular-nums; }
-    .score-block span { font-family: "Courier New", monospace; font-size: .75rem; }
-
-    .classification { margin: 0 0 4px; font-size: 1.7rem; line-height: 1; }
-    .decision { margin: 0; font-family: "Courier New", monospace; font-weight: 700; }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      margin: 0 0 20px;
-    }
-
-    .metric { min-height: 82px; padding: 10px; border: 2px inset #fff; background: #f7f7f7; }
-    .metric dt { margin-bottom: 6px; font-family: "Courier New", monospace; font-size: .69rem; font-weight: 700; line-height: 1.15; text-transform: uppercase; }
-    .metric dd { margin: 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-
-    .explain-panel { margin-bottom: 18px; border: 2px inset #fff; background: #fff; }
-    .explain-panel h3 { margin: 0; padding: 10px 12px; color: #fff; background: var(--blue); font-size: 1rem; }
-    .score-reasons { margin: 0; padding: 10px 14px; list-style: none; }
-    .score-reasons li { display: flex; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px dotted #777; font-family: "Courier New", monospace; font-size: .88rem; }
-    .score-reasons li:last-child { border-bottom: 0; }
-    .reason-delta { flex: 0 0 auto; font-weight: 700; }
-    .reason-delta.is-negative { color: var(--green); }
-    .reason-delta.is-positive { color: var(--red); }
-
-    .reflection {
-      margin-bottom: 18px;
-      padding: 15px;
-      border: 3px solid #000;
-      background: #ffbfe3;
-      box-shadow: 5px 5px 0 #000;
-    }
-
-    .reflection p { margin: 0 0 8px; }
-    .reflection strong { display: block; font-size: 1.15rem; }
-    .trace-note { margin: 0 0 18px; font-family: "Courier New", monospace; font-size: .78rem; }
-
-    .history-window {
-      position: fixed;
-      z-index: var(--z-history);
-      top: 316px;
-      right: 22px;
-      width: 310px;
-    }
-
-    .history-window .window-body { padding: 12px; }
-    .history-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-    .history-topline h2 { margin: 0; font-size: 1rem; }
-
-    .tiny-button { min-height: 32px; padding: 4px 8px; border: 0; background: var(--silver); box-shadow: var(--button-shadow); font: 700 .68rem "Courier New", monospace; }
-    .history-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
-
-    .history-item {
-      display: grid;
-      grid-template-columns: 36px 42px 1fr;
-      gap: 7px;
-      align-items: center;
-      padding: 7px;
-      border: 2px inset #fff;
-      background: #fff;
-      font-family: "Courier New", monospace;
-      font-size: .67rem;
-      line-height: 1.25;
-    }
-
-    .history-item strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
-    .history-class { display: block; font-weight: 700; }
-    .history-empty { padding: 14px 8px; border: 2px inset #fff; background: #fff; font: .77rem "Courier New", monospace; }
-
-    .mini-window {
-      position: fixed;
-      z-index: 28;
-      top: 76px;
-      right: 32px;
-      width: 280px;
-      user-select: none;
-      transition: transform .18s steps(3, end), opacity .18s steps(3, end);
-    }
-
-    .mini-window.is-minimized { pointer-events: none; opacity: 0; transform: translateY(100vh) scale(.2); }
-    .mini-window .titlebar { cursor: move; }
-    .mini-window .window-body { display: flex; gap: 12px; align-items: center; padding: 15px; }
-    .warning-icon { display: grid; flex: 0 0 auto; width: 42px; height: 38px; place-items: end center; padding-bottom: 2px; background: var(--yellow); border: 3px solid #000; clip-path: polygon(50% 0, 100% 100%, 0 100%); font-weight: 900; font-size: 1.25rem; }
-    .mini-copy { margin: 0; font: .73rem "Courier New", monospace; }
-
-    .taskbar {
-      position: fixed;
-      z-index: var(--z-taskbar);
-      right: 0;
-      bottom: 0;
-      left: 0;
-      display: flex;
-      height: 42px;
-      align-items: center;
-      gap: 7px;
-      padding: 4px 6px;
-      border-top: 2px solid #fff;
-      background: var(--silver);
-      box-shadow: inset 0 2px 0 #ececec;
-    }
-
-    .taskbar-button { min-height: 32px; padding: 5px 10px; border: 0; background: var(--silver); box-shadow: var(--button-shadow); font: 700 .76rem "Courier New", monospace; }
-    .taskbar-start { background: var(--pink); font-size: .8rem; }
-    .taskbar-spacer { flex: 1; }
-    .taskbar-clock { min-width: 84px; padding: 5px 9px; border: 2px inset #fff; text-align: center; font: 700 .76rem "Courier New", monospace; font-variant-numeric: tabular-nums; }
-
-    .pixel-cursor {
-      position: fixed;
-      z-index: var(--z-cursor);
-      top: 0;
-      left: 0;
-      display: none;
-      width: 44px;
-      height: 52px;
-      pointer-events: none;
-      will-change: transform;
-      filter: drop-shadow(2px 2px 0 rgba(255,47,47,.65));
-    }
-
-    .pixel-cursor svg { display: block; width: 100%; height: 100%; }
-    .pixel-cursor .cursor-hourglass { display: none; }
-    body.is-analyzing .pixel-cursor .cursor-arrow { display: none; }
-    body.is-analyzing .pixel-cursor .cursor-hourglass { display: block; }
-
-    .click-spark {
-      position: fixed;
-      z-index: 999;
-      width: 7px;
-      height: 7px;
-      pointer-events: none;
-      background: var(--yellow);
-      border: 1px solid #000;
-      animation: spark-out .34s steps(4, end) forwards;
-    }
-
-    @keyframes spark-out { to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(90deg); } }
-
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-
-    @media (pointer: fine) {
-      html, body, body * { cursor: none !important; }
-      .pixel-cursor { display: block; }
-    }
-
-    @media (max-width: 1100px) {
-      .screen { padding-right: 32px; padding-left: 32px; }
-      .test-window, .analysis-window, .result-window { width: min(790px, 92vw); }
-      .history-window { position: relative; top: auto; right: auto; width: min(790px, calc(100% - 48px)); margin: 22px auto 92px; }
-      .mini-window { display: none; }
-      .hero-title { width: 90vw; }
-      .intro-window { margin-left: 10vw; }
-    }
-
-    @media (max-width: 700px) {
-      .status-corner--left { left: 8px; }
-      .status-corner--right { display: none; }
-      .screen { min-height: auto; padding: 70px 12px 36px; }
-      .hero-title { width: 96%; margin: 36px 0 -12px; font-size: clamp(3.7rem, 19vw, 5.6rem); }
-      .hero-title .question { -webkit-text-stroke-width: 2px; text-shadow: 4px 4px 0 var(--pink); }
-      .intro-window { width: 100%; margin: 0; }
-      .intro-window .window-body, .window-body { padding: 18px; }
-      .captcha-head { display: block; }
-      .captcha-count { display: inline-block; margin-top: 10px; }
-      .captcha-actions { flex-direction: column-reverse; }
-      .captcha-actions .win-button { width: 100%; }
-      .result-banner { grid-template-columns: 1fr; text-align: center; }
-      .score-block { padding-bottom: 12px; border-right: 0; border-bottom: 2px solid currentColor; }
-      .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .history-window { width: calc(100% - 24px); }
-      .taskbar-button--note { display: none; }
-    }
-
+    @media (pointer: fine) { body, button, a { cursor: none !important; } }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
-      body::after { opacity: .08; }
-      .status-light { animation: none; }
-      .click-spark { display: none; }
-    }
-
-    /* The entire experience sits inside one responsive CRT computer model. */
-    body::after { display: none; }
-
-    .desktop {
-      display: grid;
-      min-height: 100dvh;
-      padding: 14px;
-      place-items: center;
-    }
-
-    .computer-shell {
-      position: relative;
-      width: min(1220px, calc(100vw - 28px));
-      margin: auto;
-      filter: drop-shadow(16px 20px 0 rgba(0,0,0,.34));
-    }
-
-    .monitor-case {
-      position: relative;
-      z-index: 2;
-      padding: 26px 32px 18px;
-      border: 4px solid #24211d;
-      border-radius: 38px 38px 20px 20px;
-      background: #cbc3ab;
-      box-shadow: inset 8px 8px 0 #eee8d5, inset -9px -9px 0 #716b5d, 0 0 0 5px #978f79;
-    }
-
-    .monitor-brand {
-      position: absolute;
-      top: 6px;
-      left: 50%;
-      color: #3d392f;
-      font: 700 .68rem "Courier New", monospace;
-      letter-spacing: .25em;
-      transform: translateX(-50%);
-    }
-
-    .monitor-screen {
-      position: relative;
-      height: min(660px, calc(100dvh - 230px));
-      min-height: 520px;
-      overflow: auto;
-      border: 12px solid #2a2926;
-      border-radius: 22px;
-      background-color: var(--desktop);
-      background-image:
-        linear-gradient(90deg, rgba(255,255,255,.13) 1px, transparent 1px),
-        linear-gradient(rgba(255,255,255,.13) 1px, transparent 1px);
-      background-size: 24px 24px;
-      box-shadow: inset 0 0 36px rgba(0,0,0,.36), 0 0 0 4px #756e5e, 0 0 0 7px #f4eedb;
-      scrollbar-color: #777 #c6c6c6;
-      isolation: isolate;
-    }
-
-    .monitor-screen::after {
-      position: absolute;
-      inset: 0;
-      z-index: 900;
-      pointer-events: none;
-      content: "";
-      opacity: .15;
-      background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0, rgba(0,0,0,.22) 1px, transparent 1px, transparent 4px);
-      mix-blend-mode: multiply;
-    }
-
-    .monitor-controls {
-      display: flex;
-      height: 45px;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 12px;
-      padding: 12px 24px 0;
-    }
-
-    .monitor-led { width: 10px; height: 10px; border: 2px solid #26231d; background: #5cff66; box-shadow: 0 0 8px #2cff3a; }
-    .monitor-button { width: 18px; height: 18px; border: 3px outset #eee8d5; border-radius: 50%; background: #9b937d; }
-    .monitor-vents { width: 120px; height: 12px; background: repeating-linear-gradient(90deg, #645e50 0 3px, transparent 3px 8px); }
-
-    .computer-neck {
-      position: relative;
-      z-index: 1;
-      width: 230px;
-      height: 48px;
-      margin: -5px auto 0;
-      border: 4px solid #24211d;
-      background: #aaa28d;
-      box-shadow: inset 8px 0 #e7e0ca, inset -8px 0 #716b5d;
-    }
-
-    .computer-base {
-      position: relative;
-      z-index: 2;
-      width: 52%;
-      height: 46px;
-      margin: -7px auto 0;
-      border: 4px solid #24211d;
-      background: #c7bfa8;
-      box-shadow: inset 8px 8px #e9e2cf, inset -8px -8px #766f60;
-      clip-path: polygon(12% 0, 88% 0, 100% 100%, 0 100%);
-    }
-
-    .keyboard-model {
-      position: relative;
-      z-index: 3;
-      width: 74%;
-      height: 64px;
-      margin: -6px auto 0;
-      padding: 12px 8% 9px;
-      border: 4px solid #24211d;
-      background: #bdb49c;
-      box-shadow: inset 6px 6px #eee8d5, inset -7px -7px #716b5d;
-      clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%);
-    }
-
-    .keyboard-keys {
-      width: 100%;
-      height: 100%;
-      opacity: .62;
-      background:
-        repeating-linear-gradient(90deg, #4b483f 0 2px, transparent 2px 25px),
-        repeating-linear-gradient(0deg, #4b483f 0 2px, transparent 2px 15px);
-    }
-
-    .monitor-screen .status-corner { position: absolute; top: 12px; }
-    .monitor-screen .status-corner--left { left: 14px; }
-    .monitor-screen .status-corner--right { right: 14px; }
-    .monitor-screen .screen { min-height: 100%; padding: 58px 28px 26px; }
-    .monitor-screen.is-test-view { overflow: hidden; }
-    .monitor-screen #test-screen { padding-top: 47px; padding-bottom: 6px; }
-    .monitor-screen .hero-title { width: min(600px, 66%); margin: 0 0 -36px 1.5vw; font-size: clamp(3.4rem, 5.5vw, 4.65rem); }
-    .monitor-screen .intro-window { width: min(540px, 68%); margin-left: 10%; }
-    .monitor-screen .intro-window .window-body { padding: 10px 26px 12px; }
-    .monitor-screen .intro-window .subtitle { margin-bottom: 8px; font-size: 1.5rem; }
-    .monitor-screen .intro-window .eyebrow { margin-bottom: 5px; }
-    .monitor-screen .intro-copy { margin-bottom: 8px; font-size: .92rem; line-height: 1.3; }
-    .monitor-screen .system-ready { margin-bottom: 8px; padding: 7px; }
-    .monitor-screen .intro-window .win-button { min-height: 40px; padding-top: 6px; padding-bottom: 6px; }
-    .monitor-screen .simulation-hint { margin-top: 6px; font-size: .65rem; }
-    .monitor-screen .test-window { width: min(810px, calc(100% - 10px)); }
-    .monitor-screen .captcha-board { width: min(300px, 100%); }
-    .monitor-screen .analysis-window { width: min(640px, calc(100% - 20px)); }
-    .monitor-screen .result-window { width: min(760px, calc(100% - 4px)); }
-    .test-switcher {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      margin: 10px 0 0;
-      padding: 7px;
-      border: 2px inset #fff;
-      background: #efefef;
-      font: 700 .76rem "Courier New", monospace;
-    }
-
-    .test-switcher .tiny-button { background: var(--yellow); }
-    .test-set-label { min-width: 150px; text-align: center; }
-
-    .result-banner { grid-template-columns: 140px 1fr 150px; }
-    .avatar-card { text-align: center; }
-    .avatar-viewport {
-      width: 132px;
-      height: 132px;
-      margin: 0 auto 6px;
-      border: 4px solid currentColor;
-      background-image: url("assets/avatar-states.png");
-      background-repeat: no-repeat;
-      background-size: 300% auto;
-      background-position-y: center;
-      background-color: #fff;
-      image-rendering: pixelated;
-      box-shadow: 5px 5px 0 rgba(0,0,0,.5);
-    }
-
-    .avatar-viewport[data-avatar="human"] { background-position-x: left; }
-    .avatar-viewport[data-avatar="uncertain"] { background-position-x: center; }
-    .avatar-viewport[data-avatar="bot"] { background-position-x: right; }
-    .avatar-label { display: block; font: 700 .72rem "Courier New", monospace; }
-
-    .result-explainer {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin: 0 0 18px;
-    }
-
-    .result-explainer p { margin: 0; padding: 11px; border: 2px solid #000; background: #fff; font-size: .84rem; }
-    .result-explainer strong { display: block; margin-bottom: 5px; color: var(--blue); font: 700 .73rem "Courier New", monospace; }
-
-    @media (max-width: 1100px) {
-      .computer-shell { width: min(960px, calc(100vw - 20px)); }
-      .monitor-case { padding: 24px 24px 16px; }
-      .monitor-screen .screen { min-height: 100%; padding: 62px 24px 68px; }
-      .monitor-screen .test-window,
-      .monitor-screen .analysis-window,
-      .monitor-screen .result-window { width: min(790px, 96%); }
-      .monitor-screen .hero-title { width: 90%; margin-bottom: -48px; }
-      .monitor-screen .intro-window { width: min(570px, 82%); margin-left: 8%; }
-    }
-
-    @media (max-width: 700px) {
-      .desktop { padding: 5px; align-items: start; }
-      .computer-shell { width: calc(100vw - 10px); filter: drop-shadow(7px 8px 0 rgba(0,0,0,.3)); }
-      .monitor-case { padding: 18px 10px 10px; border-radius: 22px 22px 12px 12px; }
-      .monitor-brand { top: 3px; }
-      .monitor-screen { min-height: 560px; height: calc(100dvh - 180px); border-width: 7px; border-radius: 12px; }
-      .monitor-controls { height: 30px; padding-top: 7px; }
-      .computer-neck { height: 28px; width: 120px; }
-      .computer-base { width: 72%; height: 30px; }
-      .keyboard-model { width: 92%; height: 42px; }
-      .monitor-screen .screen { padding: 64px 12px 60px; }
-      .monitor-screen .hero-title { width: 100%; margin-top: 16px; margin-bottom: -28px; font-size: clamp(3.2rem, 17vw, 5rem); }
-      .monitor-screen .intro-window { width: 100%; margin: 0; }
-      .result-banner { grid-template-columns: 1fr; }
-      .avatar-card { grid-row: 1; }
-      .result-explainer { grid-template-columns: 1fr; }
-      .captcha-workspace { grid-template-columns: 1fr; }
-      .captcha-copy-column { min-height: auto; }
-      .captcha-note { margin: 10px 0; }
-      .monitor-screen .captcha-board { width: min(300px, 100%); }
-      .test-switcher { flex-wrap: wrap; }
-    }
-
-    /* Photographic computer shell: the live interface sits behind its transparent screen cutout. */
-    .desktop { min-height: 100dvh; padding: 0; overflow: hidden; }
-
-    .computer-shell {
-      position: relative;
-      width: min(1200px, calc(100vw - 8px), calc((100dvh - 6px) * 1.333333));
-      aspect-ratio: 4 / 3;
-      margin: auto;
-      filter: drop-shadow(14px 18px 11px rgba(0,0,0,.38));
-    }
-
-    .computer-frame {
-      position: absolute;
-      z-index: 4;
-      inset: 0;
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    .monitor-screen {
-      position: absolute;
-      z-index: 2;
-      top: 7.55%;
-      left: 23.35%;
-      width: 49.5%;
-      height: 49.1%;
-      min-height: 0;
-      overflow: hidden;
-      border: 0;
-      border-radius: 18% / 12%;
-      background: transparent;
-      box-shadow: none;
-      isolation: isolate;
-    }
-
-    .screen-ui {
-      position: absolute;
-      inset: 0;
-      width: 133.3334%;
-      height: 133.3334%;
-      transform: scale(.75);
-      transform-origin: top left;
-    }
-
-    .monitor-screen::after { opacity: .09; }
-    .monitor-screen .screen { min-height: 100%; padding: 50px 22px 12px; }
-    .monitor-screen #test-screen { padding: 47px 18px 6px; }
-    .monitor-screen #result-screen { padding: 45px 10px 6px; }
-    .monitor-screen .hero-title { width: min(600px, 88%); }
-    .monitor-screen .intro-window { width: min(540px, 82%); margin-left: 9%; }
-    .monitor-screen .test-window { width: min(750px, calc(100% - 4px)); }
-    .monitor-screen .result-window { width: min(750px, calc(100% - 2px)); }
-
-    .test-set-label { min-width: 112px; }
-
-    .result-window .titlebar { min-height: 28px; margin: 3px 3px 0; padding: 3px 6px; }
-    .result-window .window-body { padding: 8px 10px 9px; }
-    .result-banner {
-      grid-template-columns: 92px 1fr 88px;
-      gap: 10px;
-      min-height: 86px;
-      margin-bottom: 7px;
-      padding: 7px 10px;
-      box-shadow: 4px 4px 0 #000;
-    }
-    .score-block strong { font-size: 3rem; }
-    .score-block span { font-size: .61rem; }
-    .classification { font-size: 1.25rem; }
-    .decision { font-size: .72rem; line-height: 1.15; }
-    .avatar-viewport { width: 68px; height: 68px; margin-bottom: 3px; border-width: 3px; box-shadow: 3px 3px 0 rgba(0,0,0,.5); }
-    .avatar-label { font-size: .58rem; }
-
-    .result-explainer { gap: 5px; margin-bottom: 7px; }
-    .result-explainer p { min-height: 67px; padding: 5px 6px; font-size: .68rem; line-height: 1.2; }
-    .result-explainer strong { margin-bottom: 3px; font-size: .6rem; }
-
-    .result-detail-grid { display: grid; grid-template-columns: .88fr 1.12fr; gap: 7px; align-items: start; }
-    .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin: 0; }
-    .metric { min-height: 43px; padding: 5px 6px; }
-    .metric dt { margin-bottom: 2px; font-size: .55rem; }
-    .metric dd { font-size: .82rem; }
-
-    .result-reasoning { min-width: 0; }
-    .explain-panel { margin-bottom: 5px; }
-    .explain-panel h3 { padding: 5px 7px; font-size: .72rem; }
-    .score-reasons { padding: 4px 7px; }
-    .score-reasons li { padding: 2px 0; font-size: .64rem; line-height: 1.15; }
-    .reflection { margin-bottom: 5px; padding: 6px 7px; border-width: 2px; box-shadow: 3px 3px 0 #000; font-size: .65rem; line-height: 1.18; }
-    .reflection p { margin-bottom: 3px; }
-    .reflection strong { font-size: .69rem; }
-    .trace-note { margin: 0 0 5px; font-size: .56rem; line-height: 1.2; }
-    .result-actions { display: flex; justify-content: flex-end; gap: 8px; }
-    .result-actions .win-button { min-height: 32px; padding: 5px 12px; font-size: .72rem; }
-
-    @media (max-width: 700px) {
-      .desktop { display: grid; min-height: 100dvh; padding: 0; place-items: center; }
-      .computer-shell { width: min(calc(100vw - 4px), calc((100dvh - 4px) * 1.333333)); }
-      .screen-ui { width: 238.0953%; height: 238.0953%; transform: scale(.42); }
-      .monitor-screen .screen { padding-top: 48px; }
-      .captcha-workspace { grid-template-columns: minmax(205px, 1fr) 286px; gap: 10px; }
-      .captcha-copy-column { min-height: 286px; }
-      .monitor-screen .captcha-board { width: 286px; }
-      .result-banner { grid-template-columns: 84px 1fr 78px; }
-      .result-explainer { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .result-detail-grid { grid-template-columns: .88fr 1.12fr; }
-    }
-
-    @media (max-width: 520px) {
-      .screen-ui { width: 344.8276%; height: 344.8276%; transform: scale(.29); }
+      body::after { opacity: .06; }
+      .dog-reaction { transition: none; }
     }
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to simulator</a>
-  <div class="desktop">
-    <div class="computer-shell" aria-label="Interactive simulator displayed inside a retro computer">
-      <div class="monitor-screen">
-        <div class="screen-ui">
-    <div class="status-corner status-corner--left"><span class="status-light" aria-hidden="true"></span><span id="system-status">SYSTEM READY</span></div>
-    <div class="status-corner status-corner--right">ONLINE / LOCAL</div>
+  <a class="skip-link" href="#main">Skip to the challenge</a>
+  <div class="app">
+    <header class="masthead">
+      <div>
+        <p class="kicker">TECH B // SYSTEMS OF REPRESENTATION // V1</p>
+        <h1>Are You <span>Human Enough?</span></h1>
+        <p class="subhead">Mechanism-visible CAPTCHA risk simulator · local browser session only</p>
+      </div>
+      <div class="system-state" id="system-state">SYSTEM READY</div>
+    </header>
 
-    <main id="main">
-      <section class="screen is-active" id="intro-screen" aria-labelledby="page-title">
-        <h1 class="hero-title" id="page-title">Are You<br><span class="question">Human Enough?</span></h1>
-        <div class="win-window intro-window">
-          <div class="titlebar"><span>HUMAN.EXE</span><span aria-hidden="true">v1.0</span></div>
+    <main class="workspace" id="main">
+      <section class="challenge-column" id="challenge-region" aria-label="CAPTCHA challenge">
+        <div class="window challenge-window">
+          <div class="titlebar"><span>HUMAN_VERIFICATION.EXE</span><span class="titlebar__buttons" aria-hidden="true">_ □ ×</span></div>
           <div class="window-body">
-            <p class="eyebrow">Classroom research experiment</p>
-            <h2 class="subtitle">An Interactive CAPTCHA Risk Simulator</h2>
-            <p class="intro-copy">This system cannot see who you are. It can only interpret the traces you leave behind.</p>
-            <p class="system-ready"><span class="pixel-square" aria-hidden="true"></span> HUMAN.EXE is ready.</p>
-            <div class="button-row">
-              <button class="win-button win-button--primary" id="start-button" type="button">START TEST</button>
-              <button class="win-button win-button--bot" id="simulate-bot-button" type="button" aria-describedby="simulation-hint">SIMULATE BOT</button>
-            </div>
-            <p class="simulation-hint" id="simulation-hint">Demo mode auto-selects the correct tiles and submits them at machine speed.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="screen" id="test-screen" aria-labelledby="captcha-instruction">
-        <div class="win-window test-window" role="region" aria-label="Human verification test">
-          <div class="titlebar"><span>HUMAN VERIFICATION</span><span aria-hidden="true">□ ×</span></div>
-          <div class="window-body">
-            <div class="captcha-workspace">
-              <div class="captcha-copy-column">
-                <div class="captcha-head">
-                  <p>PLEASE COMPLETE:</p>
-                  <strong id="captcha-instruction">Select all images containing French fries</strong>
-                  <span class="captcha-count" id="selection-count" aria-live="polite">0 SELECTED</span>
-                </div>
-                <p class="captcha-note">Behavior is measured locally after START TEST. No personal data leaves this page.</p>
+            <section class="view intro-view" id="intro-view">
+              <h2>An Interactive CAPTCHA Risk Simulator</h2>
+              <p>This system cannot see who you are. It can only interpret the traces you leave behind.</p>
+              <p class="terminal-line">&gt; HUMAN.EXE is ready.<br>&gt; Scoring timer: IDLE<br>&gt; Behavior data: LOCAL MEMORY ONLY</p>
+              <div class="button-row">
+                <button class="win-button win-button--primary" id="start-button" type="button">START TEST</button>
+                <button class="win-button win-button--bot" id="simulate-bot-button" type="button" aria-describedby="bot-hint">SIMULATE BOT</button>
               </div>
-              <div class="captcha-image-column">
-                <div class="captcha-board">
+              <p class="hint" id="bot-hint">Bot demo auto-selects the correct tiles and submits at machine speed.</p>
+            </section>
+
+            <section class="view test-view" id="test-view" hidden aria-labelledby="captcha-instruction">
+              <div class="test-topline"><span id="attempt-label">ATTEMPT 01</span><span>SCORING TIMER: <strong id="test-timer">00:00.00</strong></span></div>
+              <div class="test-layout">
+                <div class="captcha-board" id="captcha-board">
                   <img id="captcha-image" src="assets/captcha-grid.png" width="1254" height="1254" alt="" draggable="false">
-                  <div class="captcha-grid" id="captcha-grid" role="group" aria-label="Nine image tiles"></div>
+                  <div class="captcha-grid" id="captcha-grid" role="group" aria-label="Nine CAPTCHA image tiles"></div>
                 </div>
-                <div class="captcha-actions">
-                  <button class="win-button" id="reset-button" type="button">RESET</button>
-                  <button class="win-button win-button--verify" id="verify-button" type="button">VERIFY</button>
-                </div>
-                <div class="test-switcher">
-                  <span>TEST IMAGE:</span>
-                  <span class="test-set-label" id="test-set-label">FRIES / 01</span>
-                  <button class="tiny-button" id="change-image-button" type="button">CHANGE IMAGE</button>
+                <div class="challenge-controls">
+                  <div class="instruction-box"><span>PLEASE COMPLETE:</span><strong id="captcha-instruction">Select all images containing French fries</strong></div>
+                  <div class="selection-status" id="selection-status" role="status" aria-atomic="true">0 SELECTED</div>
+                  <div class="control-stack">
+                    <button class="win-button" id="reset-button" type="button">RESET SELECTION</button>
+                    <button class="win-button win-button--verify" id="verify-button" type="button">VERIFY</button>
+                  </div>
+                  <div class="test-switcher"><strong id="test-set-label">FRIES / 01 (1/4)</strong><button class="win-button tiny-button" id="change-image-button" type="button">CHANGE TEST IMAGE</button></div>
+                  <p class="privacy-note"><strong>OBSERVED LOCALLY:</strong> timing, selections, cursor samples, page visibility and interface events. Nothing is uploaded.</p>
                 </div>
               </div>
-            </div>
+            </section>
+
+            <section class="view analysis-view" id="analysis-view" hidden aria-labelledby="analysis-title" aria-busy="true">
+              <h2 id="analysis-title" tabindex="-1">Analyzing behavioral traces...</h2>
+              <p id="analysis-current">Initializing comparison model...</p>
+              <div class="segment-bar" id="segment-bar" role="progressbar" aria-label="Analysis progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+              <div class="analysis-log" id="analysis-log"></div>
+            </section>
+
+            <section class="view result-view" id="result-view" hidden aria-labelledby="result-classification">
+              <div class="result-banner" id="result-banner" data-level="low">
+                <div><div class="score-number" id="risk-score">0</div><div class="score-caption">RISK / 100</div></div>
+                <div><span class="result-label">SYSTEM CLASSIFICATION</span><h2 id="result-classification" tabindex="-1">LOW RISK</h2><p id="result-decision">ACCESS GRANTED</p></div>
+                <div class="result-avatar" id="result-avatar" data-avatar="human" role="img" aria-label="Pixel human avatar"></div>
+              </div>
+              <p class="result-summary" id="result-summary">Result explanation appears here.</p>
+              <dl class="result-metrics" id="result-metrics"></dl>
+              <div class="button-row"><button class="win-button" id="home-button" type="button">HOME</button><button class="win-button win-button--primary" id="try-again-button" type="button">TRY AGAIN</button></div>
+            </section>
           </div>
         </div>
       </section>
 
-      <section class="screen" id="analysis-screen" aria-labelledby="analysis-title" aria-live="polite">
-        <div class="win-window analysis-window" aria-busy="true">
-          <div class="titlebar"><span>BEHAVIOR_ANALYZER.EXE</span><span aria-hidden="true">⌁</span></div>
+      <aside class="telemetry-column" aria-label="Visible behavior monitoring">
+        <section class="window tracker-window" aria-labelledby="tracker-title">
+          <div class="titlebar"><span id="tracker-title">MOUSE TRACKING MONITOR</span><span class="rec-state" id="rec-state" data-state="standby">STANDBY</span></div>
           <div class="window-body">
-            <h2 class="analysis-heading" id="analysis-title" tabindex="-1">Analyzing behavioral traces...</h2>
-            <p class="analysis-copy" id="analysis-current">Initializing comparison model...</p>
-            <div class="segment-bar" id="segment-bar" role="progressbar" aria-label="Analysis progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
-            <div class="analysis-log" id="analysis-log"></div>
+            <div class="monitor-head"><span>VIEWPORT MAP // REAL EVENTS</span><span id="sample-state">0 SAMPLES</span></div>
+            <div class="tracker-stage"><canvas id="tracker-canvas" role="img" aria-label="Live map of the cursor path across the current browser viewport"></canvas></div>
+            <p class="canvas-caption">Bright segments are recent. Faint boxes map the challenge, image grid and VERIFY button. Leaving the page breaks the line.</p>
+            <div class="live-metrics" aria-label="Live observed behavior metrics">
+              <div class="live-metric"><span>DISTANCE</span><strong id="live-distance">0 px</strong></div>
+              <div class="live-metric"><span>SPEED</span><strong id="live-speed">0 px/s</strong></div>
+              <div class="live-metric"><span>CLICKS</span><strong id="live-clicks">0</strong></div>
+              <div class="live-metric"><span>IDLE</span><strong id="live-idle">0.0 s</strong></div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="screen" id="result-screen" aria-labelledby="result-classification">
-        <div class="win-window result-window">
-          <div class="titlebar"><span>RISK ASSESSMENT — COMPLETE</span><span aria-hidden="true">□ ×</span></div>
+        <section class="window log-window" aria-labelledby="activity-title">
+          <div class="titlebar"><span id="activity-title">LIVE ACTIVITY LOG</span><span class="titlebar__buttons" aria-hidden="true">LOG</span></div>
           <div class="window-body">
-            <div class="result-banner" id="result-banner" data-level="low">
-              <div class="score-block"><strong id="risk-score">0</strong><span>FINAL RISK SCORE / 100</span></div>
-              <div>
-                <h2 class="classification" id="result-classification" tabindex="-1">LOW RISK</h2>
-                <p class="decision" id="result-decision">ACCESS GRANTED</p>
-              </div>
-              <div class="avatar-card">
-                <div class="avatar-viewport" id="result-avatar" data-avatar="human" role="img" aria-label="Human risk avatar"></div>
-                <span class="avatar-label" id="avatar-label">HUMAN PATTERN</span>
-              </div>
-            </div>
+            <div class="log-toolbar"><span>REAL EVENTS · MAX 180 LINES</span><button class="win-button tiny-button jump-latest" id="jump-latest" type="button" hidden>JUMP TO LATEST</button></div>
+            <ol class="activity-log" id="activity-log" aria-label="Timestamped activity log"></ol>
+          </div>
+        </section>
+      </aside>
 
-            <div class="result-explainer" aria-label="Plain-language result explanation">
-              <p><strong>1 / WHAT IT SAW</strong><span id="result-saw">Your answer and cursor traces.</span></p>
-              <p><strong>2 / HOW IT SCORED</strong><span id="result-scored">Rules added or removed risk points.</span></p>
-              <p><strong>3 / WHAT IT MEANS</strong><span id="result-means">A comparison label, not proof of identity.</span></p>
-            </div>
-
-            <div class="result-detail-grid">
-              <dl class="metrics-grid" id="metrics-grid"></dl>
-
-              <div class="result-reasoning">
-                <section class="explain-panel" aria-labelledby="why-title">
-                  <h3 id="why-title">Why did the system decide this?</h3>
-                  <ul class="score-reasons" id="score-reasons"></ul>
-                </section>
-
-                <section class="reflection" aria-labelledby="reflection-title">
-                  <p>The system does not know whether you are human. It only compares your behavior to a predefined representation of human behavior.</p>
-                  <strong id="reflection-title">What kinds of human behavior might this system misunderstand?</strong>
-                </section>
-
-                <p class="trace-note" id="trace-note"></p>
-                <div class="result-actions">
-                  <button class="win-button" id="home-button" type="button">HOME</button>
-                  <button class="win-button win-button--primary" id="try-again-button" type="button">TRY AGAIN</button>
-                </div>
-              </div>
-            </div>
+      <section class="window rules-window" id="rules-window" aria-labelledby="rules-title">
+        <div class="titlebar"><span id="rules-title">RULE CHECK / WHY THIS RESULT?</span><span class="titlebar__buttons" aria-hidden="true">VISIBLE MECHANISM</span></div>
+        <div class="window-body">
+          <div class="rules-intro"><p>This is a classroom rule simulator—not a real security system. Risk is calculated only when VERIFY is pressed.</p><div><span class="tag tag--observed">OBSERVED</span> <span class="tag tag--scoring">USED IN SCORING</span></div></div>
+          <section class="rule-panel"><h3>ACTIVE SCORING RULES</h3><ul class="rule-list" id="rule-list"></ul></section>
+          <div class="actual-grid">
+            <section class="rule-panel"><h3>THIS ATTEMPT: INPUT DATA</h3><div id="actual-inputs" class="placeholder">Complete the challenge to reveal the exact input used by the score engine.</div></section>
+            <section class="rule-panel"><h3>THIS ATTEMPT: SCORE DELTAS</h3><div id="actual-reasons" class="placeholder">No live risk score is shown. Rule deltas appear after submission.</div></section>
           </div>
         </div>
       </section>
     </main>
-
-        </div>
-      </div>
-      <img class="computer-frame" src="assets/computer-frame.png" width="1448" height="1086" alt="" draggable="false">
-    </div>
   </div>
 
-  <div class="pixel-cursor" id="pixel-cursor" aria-hidden="true">
-    <svg class="cursor-arrow" viewBox="0 0 44 52" shape-rendering="crispEdges">
-      <path d="M1 1V38H9V29H15L24 47L31 43L22 27H38Z" fill="#fff" stroke="#000" stroke-width="3" stroke-linejoin="miter"/>
-      <path d="M5 7V31H10V23H23Z" fill="#fff"/>
-    </svg>
-    <svg class="cursor-hourglass" viewBox="0 0 44 52" shape-rendering="crispEdges">
-      <path d="M9 4H35V10L28 20V28L35 39V46H9V39L16 28V20L9 10Z" fill="#fff" stroke="#000" stroke-width="4"/>
-      <path d="M14 9H30L24 18H20ZM20 31H24L30 41H14Z" fill="#ffde00"/>
-    </svg>
-  </div>
-
-  <div class="sr-only" id="announcer" aria-live="polite"></div>
+  <aside class="dog-reaction" id="dog-reaction" data-kind="" aria-label="Dog reaction">
+    <div class="dog-titlebar"><span id="dog-title">SYSTEM REACTION</span><button class="dog-close" id="dog-close" type="button" aria-label="Dismiss dog reaction">×</button></div>
+    <img class="dog-image" id="dog-image" src="assets/dog-shiba.png" width="1254" height="1254" alt="">
+    <p class="dog-caption" id="dog-caption"></p>
+  </aside>
+  <div class="pixel-cursor" id="pixel-cursor" aria-hidden="true"><svg viewBox="0 0 44 52" shape-rendering="crispEdges"><path d="M1 1V38H9V29H15L24 47L31 43L22 27H38Z" fill="#fff" stroke="#000" stroke-width="3"/><path d="M5 7V31H10V23H23Z" fill="#42e477"/></svg></div>
+  <div class="sr-only" id="announcer" aria-live="polite" aria-atomic="true"></div>
 
   <script>
     "use strict";
 
-    /* All scoring thresholds and point changes live here for easy classroom editing. */
+    /* The score engine reads only this unchanged configuration. */
     const RISK_CONFIG = Object.freeze({
       baseRisk: 10,
-      answer: {
-        exactCorrect: -10,
-        perIncorrectSelection: 8,
-        perMissedCorrectTile: 8,
-        imperfectScoreCap: 60
-      },
-      completionTime: {
-        ultraFastUnderSeconds: 2,
-        ultraFastPoints: 25,
-        fastThroughSeconds: 4,
-        fastPoints: 8,
-        slowOverSeconds: 20,
-        slowPoints: 10
-      },
-      firstClick: {
-        suspiciousUnderSeconds: 0.25,
-        suspiciousPoints: 15
-      },
-      movement: {
-        sampleIntervalMs: 50,
-        limitedDistanceUnderPx: 260,
-        limitedDistancePoints: 20,
-        straightnessOver: 0.88,
-        minimumDistanceForStraightnessPx: 80,
-        straightnessPoints: 10,
-        naturalVariationCvAtLeast: 0.30,
-        minimumSamplesForVariation: 8,
-        naturalVariationPoints: -10
-      },
-      automationPattern: {
-        exactAndUltraFastPoints: 40
-      },
-      correction: {
-        pointsEach: -5,
-        maximumReduction: -10
-      },
-      classifications: {
-        lowMax: 30,
-        uncertainMax: 60
-      },
-      analysis: {
-        stepDelayMs: 460
-      },
-      simulation: {
-        firstSelectionDelayMs: 80,
-        betweenSelectionsMs: 110,
-        beforeVerifyMs: 140
+      answer: { exactCorrect: -10, perIncorrectSelection: 8, perMissedCorrectTile: 8, imperfectScoreCap: 60 },
+      completionTime: { ultraFastUnderSeconds: 2, ultraFastPoints: 25, fastThroughSeconds: 4, fastPoints: 8, slowOverSeconds: 20, slowPoints: 10 },
+      firstClick: { suspiciousUnderSeconds: 0.25, suspiciousPoints: 15 },
+      movement: { sampleIntervalMs: 50, limitedDistanceUnderPx: 260, limitedDistancePoints: 20, straightnessOver: 0.88, minimumDistanceForStraightnessPx: 80, straightnessPoints: 10, naturalVariationCvAtLeast: 0.30, minimumSamplesForVariation: 8, naturalVariationPoints: -10 },
+      automationPattern: { exactAndUltraFastPoints: 40 },
+      correction: { pointsEach: -5, maximumReduction: -10 },
+      classifications: { lowMax: 30, uncertainMax: 60 },
+      analysis: { stepDelayMs: 340 },
+      simulation: { firstSelectionDelayMs: 80, betweenSelectionsMs: 110, beforeVerifyMs: 140 }
+    });
+
+    /* All reaction thresholds, priorities, text and assets are centralized here. */
+    const DOG_CONFIG = Object.freeze({
+      cooldownMs: 8000,
+      hoverNudgeMs: 1000,
+      idleLogMs: 2000,
+      idleDogMs: 4000,
+      rapidClickWindowMs: 1000,
+      rapidClickCount: 5,
+      correctionCycles: 3,
+      verifyHoverMs: 3000,
+      visibleMs: 3800,
+      priorities: { pomeranian: 100, chihuahua: 90, dachshund: 80, husky: 70, shiba: 60, golden: 50 },
+      dogs: {
+        golden: { name: "GOLDEN RETRIEVER", image: "assets/dog-golden.png", alt: "A blankly staring golden retriever", caption: "bro?" },
+        chihuahua: { name: "CHIHUAHUA WARNING", image: "assets/dog-chihuahua.png", alt: "A shocked Chihuahua", caption: "clicking harder won’t help." },
+        dachshund: { name: "DACHSHUND CHECK", image: "assets/dog-dachshund.png", alt: "A confused dachshund tilting its head", caption: "final answer? …final final?" },
+        shiba: { name: "SHIBA OBSERVER", image: "assets/dog-shiba.png", alt: "A suspicious Shiba Inu", caption: "it’s just a button." },
+        husky: { name: "HUSKY SECURITY", image: "assets/dog-husky.png", alt: "An irritated husky", caption: "welcome back, suspicious citizen." },
+        pomeranian: { name: "POMERANIAN AUDIT", image: "assets/dog-pomeranian.png", alt: "A smug Pomeranian wearing sunglasses", caption: "correct answers. suspicious vibes." }
       }
     });
 
-    /* Correct tile indices are zero-based and read left-to-right, top-to-bottom. */
     const TEST_SETS = Object.freeze([
-      Object.freeze({
-        id: "fries-01",
-        label: "FRIES / 01",
-        image: "assets/captcha-grid.png",
-        instruction: "Select all images containing French fries",
-        /* Verified from the supplied image: top-left, center, bottom-left, bottom-right. */
-        correctTiles: Object.freeze([0, 4, 6, 8])
-      }),
-      Object.freeze({
-        id: "dogs-02",
-        label: "DOGS / 02",
-        image: "assets/captcha-grid-2.png",
-        instruction: "Select all images that are dogs",
-        /* Verified from the supplied image: five dogs; the remaining tiles are cats or rabbits. */
-        correctTiles: Object.freeze([0, 3, 4, 5, 8])
-      }),
-      Object.freeze({
-        id: "traffic-lights-03",
-        label: "LIGHTS / 03",
-        image: "assets/captcha-grid-3.png",
-        instruction: "Select all images containing traffic lights",
-        /* Verified from the supplied image: top-left, top-right, center, bottom-left. */
-        correctTiles: Object.freeze([0, 2, 4, 6])
-      }),
-      Object.freeze({
-        id: "angry-dachshunds-04",
-        label: "ANGRY DOG / 04",
-        image: "assets/captcha-grid-4.png",
-        instruction: "Select all images containing an angry dachshund",
-        /* Verified from the supplied image: top-center and bottom-left. */
-        correctTiles: Object.freeze([1, 6])
-      })
+      Object.freeze({ id: "fries-01", label: "FRIES / 01", image: "assets/captcha-grid.png", instruction: "Select all images containing French fries", correctTiles: Object.freeze([0, 4, 6, 8]) }),
+      Object.freeze({ id: "dogs-02", label: "DOGS / 02", image: "assets/captcha-grid-2.png", instruction: "Select all images that are dogs", correctTiles: Object.freeze([0, 3, 4, 5, 8]) }),
+      Object.freeze({ id: "traffic-lights-03", label: "LIGHTS / 03", image: "assets/captcha-grid-3.png", instruction: "Select all images containing traffic lights", correctTiles: Object.freeze([0, 2, 4, 6]) }),
+      Object.freeze({ id: "angry-dachshunds-04", label: "ANGRY DOG / 04", image: "assets/captcha-grid-4.png", instruction: "Select all images containing an angry dachshund", correctTiles: Object.freeze([1, 6]) })
     ]);
 
-    const CAPTCHA_TILE_COUNT = 9;
-
-    const HISTORY_KEY = "humanEnough.attemptHistory.v4";
-    const screens = [...document.querySelectorAll(".screen")];
-    const grid = document.getElementById("captcha-grid");
-    const selectionCount = document.getElementById("selection-count");
-    const announcer = document.getElementById("announcer");
+    const UI = Object.freeze({
+      intro: document.getElementById("intro-view"), test: document.getElementById("test-view"), analysis: document.getElementById("analysis-view"), result: document.getElementById("result-view"),
+      grid: document.getElementById("captcha-grid"), image: document.getElementById("captcha-image"), instruction: document.getElementById("captcha-instruction"), selection: document.getElementById("selection-status"),
+      verify: document.getElementById("verify-button"), reset: document.getElementById("reset-button"), change: document.getElementById("change-image-button"), simulate: document.getElementById("simulate-bot-button"),
+      system: document.getElementById("system-state"), announcer: document.getElementById("announcer")
+    });
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const selectedTiles = new Set();
-    let currentTestIndex = 0;
-    let pendingResult = null;
-    let isSimulating = false;
-    let metrics = freshMetrics();
-    let history = loadHistory();
+    const wait = ms => new Promise(resolve => window.setTimeout(resolve, ms));
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const formatClock = ms => { const total = Math.max(0, ms); const minutes = Math.floor(total / 60000); const seconds = Math.floor((total % 60000) / 1000); const hundredths = Math.floor((total % 1000) / 10); return `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}.${String(hundredths).padStart(2,"0")}`; };
 
-    function freshMetrics() {
-      return {
-        active: false,
-        startedAt: 0,
-        verifiedAt: 0,
-        firstImageClickAt: null,
-        totalDistance: 0,
-        movementCount: 0,
-        movementDurationMs: 0,
-        previousPoint: null,
-        firstPoint: null,
-        lastPoint: null,
-        lastSampleAt: 0,
-        speeds: [],
-        imageClicks: 0,
-        corrections: 0,
-        simulated: false
-      };
-    }
+    const ActivityLog = (() => {
+      const list = document.getElementById("activity-log");
+      const jump = document.getElementById("jump-latest");
+      const maxLines = 180;
+      let origin = performance.now();
+      let autoFollow = true;
+      let internalScroll = false;
+      function write(message) { const item = document.createElement("li"); const time = document.createElement("time"); time.textContent = `[${formatClock(performance.now() - origin)}] `; item.append(time, document.createTextNode(message)); list.appendChild(item); while (list.children.length > maxLines) list.firstElementChild.remove(); if (autoFollow) requestAnimationFrame(() => { internalScroll = true; list.scrollTop = list.scrollHeight; requestAnimationFrame(() => { internalScroll = false; }); }); }
+      function reset(firstMessage) { list.innerHTML = ""; origin = performance.now(); autoFollow = true; jump.hidden = true; write(firstMessage); }
+      function jumpToLatest() { autoFollow = true; jump.hidden = true; list.scrollTop = list.scrollHeight; }
+      list.addEventListener("scroll", () => { if (internalScroll) return; const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 18; autoFollow = atBottom; jump.hidden = atBottom; });
+      jump.addEventListener("click", jumpToLatest);
+      return Object.freeze({ write, reset, jumpToLatest });
+    })();
 
-    function showScreen(id, focusSelector) {
-      screens.forEach(screen => screen.classList.toggle("is-active", screen.id === id));
-      const monitorScreen = document.querySelector(".monitor-screen");
-      monitorScreen?.classList.toggle("is-test-view", id === "test-screen");
-      monitorScreen?.scrollTo({ top: 0, behavior: "auto" });
-      if (focusSelector) requestAnimationFrame(() => {
-        document.querySelector(focusSelector)?.focus({ preventScroll: true });
-        monitorScreen?.scrollTo({ top: 0, behavior: "auto" });
-      });
-    }
+    const DogSystem = (() => {
+      const popup = document.getElementById("dog-reaction");
+      const image = document.getElementById("dog-image");
+      const title = document.getElementById("dog-title");
+      const caption = document.getElementById("dog-caption");
+      let current = null;
+      let lastShownAt = -Infinity;
+      let hideTimer = 0;
+      let hoverTimer = 0;
+      let nudgeUsed = false;
+      let candidates = [];
+      let candidateFrame = 0;
+      function reset() { hide(true); lastShownAt = -Infinity; candidates = []; if (candidateFrame) cancelAnimationFrame(candidateFrame); candidateFrame = 0; }
+      function request(kind, options = {}) { candidates.push({ kind, force: Boolean(options.force), keepUntilResume: Boolean(options.keepUntilResume) }); if (!candidateFrame) candidateFrame = requestAnimationFrame(flush); }
+      function flush() { candidateFrame = 0; const candidate = candidates.sort((a,b) => DOG_CONFIG.priorities[b.kind] - DOG_CONFIG.priorities[a.kind])[0]; candidates = []; if (!candidate) return; const now = performance.now(); if (!candidate.force && (current || now - lastShownAt < DOG_CONFIG.cooldownMs)) return; show(candidate.kind, candidate); }
+      function show(kind, options) { if (current) hide(true); const dog = DOG_CONFIG.dogs[kind]; current = kind; lastShownAt = performance.now(); nudgeUsed = false; popup.dataset.kind = kind; title.textContent = dog.name; image.src = dog.image; image.alt = dog.alt; caption.textContent = dog.caption; popup.classList.remove("is-nudging"); popup.classList.add("is-visible"); ActivityLog.write(`${dog.name} reaction triggered.`); UI.announcer.textContent = `${dog.name}: ${dog.caption}`; clearTimeout(hideTimer); if (!options.keepUntilResume) hideTimer = window.setTimeout(() => hide(), DOG_CONFIG.visibleMs); }
+      function hide(immediate = false) { clearTimeout(hideTimer); clearTimeout(hoverTimer); popup.classList.remove("is-visible", "is-nudging"); if (immediate || prefersReducedMotion.matches) { current = null; popup.dataset.kind = ""; } else window.setTimeout(() => { if (!popup.classList.contains("is-visible")) { current = null; popup.dataset.kind = ""; } }, 300); }
+      function resumeGolden() { if (current !== "golden") return; caption.textContent = "oh. you’re alive."; UI.announcer.textContent = "Golden retriever: oh. you’re alive."; clearTimeout(hideTimer); hideTimer = window.setTimeout(() => hide(), 950); }
+      function stopProcessDogs() { if (current && current !== "pomeranian") hide(); candidates = []; }
+      popup.addEventListener("mouseenter", () => { if (!current || nudgeUsed) return; hoverTimer = window.setTimeout(() => { if (!current || nudgeUsed) return; nudgeUsed = true; popup.classList.add("is-nudging"); caption.textContent = "the test is over there."; ActivityLog.write(`${DOG_CONFIG.dogs[current].name} noticed the cursor hovering for 1 second.`); }, DOG_CONFIG.hoverNudgeMs); });
+      popup.addEventListener("mouseleave", () => clearTimeout(hoverTimer));
+      document.getElementById("dog-close").addEventListener("click", () => hide());
+      return Object.freeze({ reset, request, hide, resumeGolden, stopProcessDogs });
+    })();
 
-    function createCaptchaTiles() {
-      const fragment = document.createDocumentFragment();
-      for (let index = 0; index < CAPTCHA_TILE_COUNT; index += 1) {
-        const button = document.createElement("button");
-        const row = Math.floor(index / 3) + 1;
-        const column = (index % 3) + 1;
-        button.type = "button";
-        button.className = "captcha-tile";
-        button.dataset.index = String(index);
-        button.setAttribute("aria-pressed", "false");
-        button.setAttribute("aria-label", `Tile ${index + 1}, row ${row}, column ${column}. Not selected.`);
-        button.innerHTML = '<span class="tile-check" aria-hidden="true">✓</span>';
-        button.addEventListener("click", () => toggleTile(button, index));
-        fragment.appendChild(button);
+    const Telemetry = (() => {
+      const canvas = document.getElementById("tracker-canvas");
+      const ctx = canvas.getContext("2d");
+      const recState = document.getElementById("rec-state");
+      const metricDistance = document.getElementById("live-distance");
+      const metricSpeed = document.getElementById("live-speed");
+      const metricClicks = document.getElementById("live-clicks");
+      const metricIdle = document.getElementById("live-idle");
+      const sampleState = document.getElementById("sample-state");
+      const maxPoints = 5000;
+      const recentMs = 6000;
+      let state = freshState();
+      function freshScoring() { return { active: false, startedAt: 0, verifiedAt: 0, firstImageClickAt: null, totalDistance: 0, movementCount: 0, movementDurationMs: 0, previousPoint: null, firstPoint: null, lastPoint: null, lastSampleAt: 0, speeds: [], imageClicks: 0, corrections: 0, simulated: false }; }
+      function freshState() { return { active: false, frozen: false, frozenAt: 0, points: [], pulses: [], displayClicks: 0, lastRawPoint: null, lastPathAt: 0, lastMoveAt: 0, smoothedSpeed: 0, needsBreak: true, idleLogged: false, idleDogRequested: false, rapidClicks: [], scoring: freshScoring() }; }
+      function start(simulated = false) { state = freshState(); const now = performance.now(); state.active = true; state.lastMoveAt = now; state.scoring.active = true; state.scoring.startedAt = now; state.scoring.simulated = simulated; recState.dataset.state = "rec"; recState.textContent = "● REC"; updateMetrics(now); }
+      function standby() { state.active = false; state.frozen = false; state.needsBreak = true; recState.dataset.state = "standby"; recState.textContent = "STANDBY"; }
+      function freeze() { const now = performance.now(); state.active = false; state.frozen = true; state.frozenAt = now; state.scoring.active = false; state.scoring.verifiedAt = now; state.needsBreak = true; recState.dataset.state = "frozen"; recState.textContent = "FROZEN"; updateMetrics(now); return snapshot(); }
+      function breakPath() { state.needsBreak = true; state.lastRawPoint = null; state.scoring.previousPoint = null; }
+      function handleMove(event) {
+        if (!state.active || state.scoring.simulated) return;
+        const now = performance.now();
+        const raw = { x: event.clientX, y: event.clientY, time: now };
+        if (state.lastRawPoint) { const distance = Math.hypot(raw.x - state.lastRawPoint.x, raw.y - state.lastRawPoint.y); const elapsed = now - state.lastRawPoint.time; if (elapsed > 0) state.smoothedSpeed = state.smoothedSpeed * .72 + (distance / (elapsed / 1000)) * .28; }
+        state.lastRawPoint = raw;
+        if (state.idleLogged) { ActivityLog.write("Cursor movement resumed."); state.idleLogged = false; DogSystem.resumeGolden(); }
+        state.lastMoveAt = now;
+        if (now - state.lastPathAt >= 16) { state.points.push({ nx: clamp(event.clientX / Math.max(1, innerWidth), 0, 1), ny: clamp(event.clientY / Math.max(1, innerHeight), 0, 1), time: now, start: state.needsBreak }); state.needsBreak = false; state.lastPathAt = now; if (state.points.length > maxPoints) state.points.splice(0, state.points.length - 4200); }
+        const score = state.scoring;
+        if (now - score.lastSampleAt >= RISK_CONFIG.movement.sampleIntervalMs) { const point = { x: event.clientX, y: event.clientY, time: now }; if (score.previousPoint) { const distance = Math.hypot(point.x - score.previousPoint.x, point.y - score.previousPoint.y); const elapsed = point.time - score.previousPoint.time; if (distance >= 1 && elapsed > 0) { score.totalDistance += distance; score.movementDurationMs += elapsed; score.movementCount += 1; score.speeds.push(distance / (elapsed / 1000)); } } else score.firstPoint = score.firstPoint || point; score.previousPoint = point; score.lastPoint = point; score.lastSampleAt = now; }
       }
-      grid.appendChild(fragment);
-    }
+      function handlePointerDown(event) { if (!state.active || !event.isTrusted) return; const now = performance.now(); state.displayClicks += 1; state.pulses.push({ nx: clamp(event.clientX / Math.max(1, innerWidth), 0, 1), ny: clamp(event.clientY / Math.max(1, innerHeight), 0, 1), time: now }); state.rapidClicks.push(now); state.rapidClicks = state.rapidClicks.filter(time => now - time <= DOG_CONFIG.rapidClickWindowMs); if (state.rapidClicks.length >= DOG_CONFIG.rapidClickCount && App.markCondition("chihuahua")) { ActivityLog.write(`${DOG_CONFIG.rapidClickCount} clicks detected within 1 second.`); DogSystem.request("chihuahua"); } }
+      function recordImageClick(isCorrection) { const now = performance.now(); const score = state.scoring; score.imageClicks += 1; if (score.firstImageClickAt === null) score.firstImageClickAt = now; if (isCorrection) score.corrections += 1; }
+      function scoringSnapshot() { return { ...state.scoring, speeds: [...state.scoring.speeds] }; }
+      function snapshot() { const referenceTime = state.frozen ? state.frozenAt : performance.now(); return { ...scoringSnapshot(), displayClicks: state.displayClicks, idleSeconds: Math.max(0, (referenceTime - state.lastMoveAt) / 1000), pathPointCount: state.points.length }; }
+      function updateIdle(now) { if (!state.active || state.scoring.simulated) return; const idle = now - state.lastMoveAt; if (idle >= DOG_CONFIG.idleLogMs && !state.idleLogged) { state.idleLogged = true; ActivityLog.write(`No cursor movement for ${(DOG_CONFIG.idleLogMs / 1000).toFixed(0)} seconds.`); } if (idle >= DOG_CONFIG.idleDogMs && !state.idleDogRequested) { state.idleDogRequested = true; ActivityLog.write(`No cursor movement for ${(DOG_CONFIG.idleDogMs / 1000).toFixed(0)} seconds.`); if (App.markCondition("golden")) DogSystem.request("golden", { keepUntilResume: true }); } }
+      function updateMetrics(now) { const referenceTime = state.frozen ? state.frozenAt : now; const idleMs = state.active || state.frozen ? Math.max(0, referenceTime - state.lastMoveAt) : 0; const decay = state.active ? clamp(1 - idleMs / 800, 0, 1) : 0; metricDistance.textContent = `${Math.round(state.scoring.totalDistance)} px`; metricSpeed.textContent = `${Math.round(state.smoothedSpeed * decay)} px/s`; metricClicks.textContent = String(state.displayClicks); metricIdle.textContent = `${(idleMs / 1000).toFixed(1)} s`; sampleState.textContent = `${state.scoring.movementCount} SAMPLES`; }
+      function resizeCanvas() { const rect = canvas.getBoundingClientRect(); const dpr = Math.min(devicePixelRatio || 1, 2); const width = Math.max(1, Math.round(rect.width * dpr)); const height = Math.max(1, Math.round(rect.height * dpr)); if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; } return { width, height }; }
+      function drawRegions(width, height) { const targets = [[document.getElementById("challenge-region"), "CHALLENGE"], [document.getElementById("captcha-board"), "GRID"], [UI.verify, "VERIFY"]]; ctx.save(); ctx.setLineDash([6,4]); ctx.font = "10px Courier New"; for (const [element, label] of targets) { if (!element || element.offsetParent === null) continue; const rect = element.getBoundingClientRect(); if (rect.width <= 0 || rect.height <= 0) continue; const x = clamp(rect.left / innerWidth, 0, 1) * width; const y = clamp(rect.top / innerHeight, 0, 1) * height; const w = clamp(rect.width / innerWidth, 0, 1) * width; const h = clamp(rect.height / innerHeight, 0, 1) * height; ctx.strokeStyle = "rgba(137,255,169,.28)"; ctx.strokeRect(x,y,w,h); ctx.fillStyle = "rgba(137,255,169,.52)"; ctx.fillText(label, x + 4, y + 11); } ctx.restore(); }
+      function draw(now) { const { width, height } = resizeCanvas(); ctx.fillStyle = "#031009"; ctx.fillRect(0,0,width,height); ctx.strokeStyle = "rgba(66,228,119,.12)"; ctx.lineWidth = 1; for (let x=0; x<width; x+=width/12) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,height); ctx.stroke(); } for (let y=0; y<height; y+=height/7) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(width,y); ctx.stroke(); } drawRegions(width,height); const visiblePoints = state.frozen ? state.points : state.points.filter(point => now - point.time <= recentMs); ctx.lineWidth = Math.max(1.5, width / 420); ctx.lineCap = "square"; for (let index=1; index<visiblePoints.length; index+=1) { const previous = visiblePoints[index-1]; const point = visiblePoints[index]; if (point.start) continue; const age = state.frozen ? .72 : clamp(1 - (now - point.time) / recentMs, .08, 1); ctx.strokeStyle = `rgba(66,255,119,${age})`; ctx.beginPath(); ctx.moveTo(previous.nx*width, previous.ny*height); ctx.lineTo(point.nx*width, point.ny*height); ctx.stroke(); } state.pulses = state.pulses.filter(pulse => state.frozen || now - pulse.time < 900); for (const pulse of state.pulses) { const progress = state.frozen ? 1 : clamp((now-pulse.time)/900,0,1); ctx.strokeStyle = `rgba(233,255,66,${state.frozen ? .55 : 1-progress})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pulse.nx*width,pulse.ny*height,5+progress*18,0,Math.PI*2); ctx.stroke(); } const last = visiblePoints[visiblePoints.length-1]; if (last) { ctx.fillStyle = "#caffd7"; ctx.shadowColor = "#42ff77"; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(last.nx*width,last.ny*height,4,0,Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; } updateIdle(now); updateMetrics(now); requestAnimationFrame(draw); }
+      document.addEventListener("pointermove", handleMove, { passive: true });
+      document.addEventListener("pointerdown", handlePointerDown, { passive: true });
+      window.addEventListener("blur", breakPath);
+      document.addEventListener("mouseleave", breakPath);
+      requestAnimationFrame(draw);
+      return Object.freeze({ start, standby, freeze, breakPath, recordImageClick, snapshot, scoringSnapshot });
+    })();
 
-    function currentTest() { return TEST_SETS[currentTestIndex]; }
-
-    function applyCurrentTestSet() {
-      const test = currentTest();
-      document.getElementById("captcha-image").src = test.image;
-      document.getElementById("captcha-instruction").textContent = test.instruction;
-      document.getElementById("test-set-label").textContent = `${test.label} (${currentTestIndex + 1}/${TEST_SETS.length})`;
-    }
-
-    function changeTestImage() {
-      currentTestIndex = (currentTestIndex + 1) % TEST_SETS.length;
-      applyCurrentTestSet();
-      resetSelection(false);
-      metrics = freshMetrics();
-      metrics.active = true;
-      metrics.startedAt = performance.now();
-      announcer.textContent = `${currentTest().label} loaded. Selection and behavior timer restarted.`;
-      document.querySelector(".captcha-tile")?.focus();
-    }
-
-    function toggleTile(button, index, automated = false) {
-      if (!metrics.active || (isSimulating && !automated)) return;
-      const wasSelected = selectedTiles.has(index);
-      metrics.imageClicks += 1;
-      if (metrics.firstImageClickAt === null) metrics.firstImageClickAt = performance.now();
-
-      if (wasSelected) {
-        selectedTiles.delete(index);
-        metrics.corrections += 1;
-      } else {
-        selectedTiles.add(index);
+    const ScoreEngine = Object.freeze({
+      evaluate(metrics, selectedTiles, test) {
+        const completionSeconds = (metrics.verifiedAt - metrics.startedAt) / 1000;
+        const firstClickSeconds = metrics.firstImageClickAt === null ? null : (metrics.firstImageClickAt - metrics.startedAt) / 1000;
+        const correctSet = new Set(test.correctTiles);
+        const incorrectSelections = [...selectedTiles].filter(index => !correctSet.has(index)).length;
+        const missedCorrectTiles = test.correctTiles.filter(index => !selectedTiles.has(index)).length;
+        const correctTileDecisions = 9 - incorrectSelections - missedCorrectTiles;
+        const accuracy = correctTileDecisions / 9 * 100;
+        const exactCorrect = incorrectSelections === 0 && missedCorrectTiles === 0;
+        const ultraFast = completionSeconds < RISK_CONFIG.completionTime.ultraFastUnderSeconds;
+        const directDistance = metrics.firstPoint && metrics.lastPoint ? Math.hypot(metrics.lastPoint.x-metrics.firstPoint.x, metrics.lastPoint.y-metrics.firstPoint.y) : 0;
+        const straightness = metrics.totalDistance > 0 ? Math.min(1, directDistance / metrics.totalDistance) : 1;
+        const meanSpeed = metrics.speeds.length ? metrics.speeds.reduce((sum,value)=>sum+value,0) / metrics.speeds.length : 0;
+        const variance = metrics.speeds.length && meanSpeed ? metrics.speeds.reduce((sum,value)=>sum+(value-meanSpeed)**2,0) / metrics.speeds.length : 0;
+        const speedVariation = meanSpeed ? Math.sqrt(variance) / meanSpeed : 0;
+        const averageSpeed = metrics.movementDurationMs > 0 ? metrics.totalDistance / (metrics.movementDurationMs/1000) : 0;
+        const reasons = [{ label: "Base risk", delta: RISK_CONFIG.baseRisk }];
+        let score = RISK_CONFIG.baseRisk;
+        const apply = (label, delta) => { score += delta; reasons.push({ label, delta }); };
+        if (exactCorrect) apply("Correct answer", RISK_CONFIG.answer.exactCorrect);
+        if (incorrectSelections) apply(`${incorrectSelections} incorrect selection${incorrectSelections===1?"":"s"}`, incorrectSelections*RISK_CONFIG.answer.perIncorrectSelection);
+        if (missedCorrectTiles) apply(`${missedCorrectTiles} missed target tile${missedCorrectTiles===1?"":"s"}`, missedCorrectTiles*RISK_CONFIG.answer.perMissedCorrectTile);
+        if (ultraFast) apply("Unusually fast response", RISK_CONFIG.completionTime.ultraFastPoints);
+        else if (completionSeconds <= RISK_CONFIG.completionTime.fastThroughSeconds) apply("Fast response", RISK_CONFIG.completionTime.fastPoints);
+        else if (completionSeconds > RISK_CONFIG.completionTime.slowOverSeconds) apply("Long completion time", RISK_CONFIG.completionTime.slowPoints);
+        if (firstClickSeconds !== null && firstClickSeconds < RISK_CONFIG.firstClick.suspiciousUnderSeconds) apply("Near-instant first selection", RISK_CONFIG.firstClick.suspiciousPoints);
+        if (metrics.totalDistance < RISK_CONFIG.movement.limitedDistanceUnderPx) apply("Very limited cursor movement", RISK_CONFIG.movement.limitedDistancePoints);
+        if (exactCorrect && ultraFast) apply("Perfect answer at machine-like speed", RISK_CONFIG.automationPattern.exactAndUltraFastPoints);
+        if (metrics.totalDistance >= RISK_CONFIG.movement.minimumDistanceForStraightnessPx && straightness > RISK_CONFIG.movement.straightnessOver) apply("Cursor path was unusually straight", RISK_CONFIG.movement.straightnessPoints);
+        if (metrics.corrections) apply(`${metrics.corrections} selection correction${metrics.corrections===1?"":"s"}`, Math.max(RISK_CONFIG.correction.maximumReduction, metrics.corrections*RISK_CONFIG.correction.pointsEach));
+        const naturalVariation = metrics.movementCount >= RISK_CONFIG.movement.minimumSamplesForVariation && speedVariation >= RISK_CONFIG.movement.naturalVariationCvAtLeast;
+        if (naturalVariation) apply("Natural speed variation", RISK_CONFIG.movement.naturalVariationPoints);
+        if (!exactCorrect && score > RISK_CONFIG.answer.imperfectScoreCap) apply("Imperfect answer limits bot certainty", RISK_CONFIG.answer.imperfectScoreCap-score);
+        score = clamp(Math.round(score),0,100);
+        const level = score <= RISK_CONFIG.classifications.lowMax ? "low" : score <= RISK_CONFIG.classifications.uncertainMax ? "uncertain" : "high";
+        const labels = { low: ["LOW RISK","ACCESS GRANTED"], uncertain: ["UNCERTAIN","ADDITIONAL VERIFICATION REQUIRED"], high: ["HIGH RISK","ACCESS DENIED"] };
+        return { score, level, classification: labels[level][0], decision: labels[level][1], completionSeconds, firstClickSeconds, incorrectSelections, missedCorrectTiles, correctTileDecisions, accuracy, exactCorrect, ultraFast, straightness, speedVariation, averageSpeed, naturalVariation, reasons, imageClicks: metrics.imageClicks, movementCount: metrics.movementCount, totalDistance: metrics.totalDistance, corrections: metrics.corrections, simulated: metrics.simulated, displayClicks: metrics.displayClicks, pathPointCount: metrics.pathPointCount, testId: test.id };
       }
+    });
 
-      const isSelected = selectedTiles.has(index);
-      const row = Math.floor(index / 3) + 1;
-      const column = (index % 3) + 1;
-      button.setAttribute("aria-pressed", String(isSelected));
-      button.setAttribute("aria-label", `Tile ${index + 1}, row ${row}, column ${column}. ${isSelected ? "Selected" : "Not selected"}.`);
-      selectionCount.textContent = `${selectedTiles.size} SELECTED`;
-      announcer.textContent = `Tile ${index + 1} ${isSelected ? "selected" : "deselected"}. ${selectedTiles.size} selected.`;
+    function renderRuleBook() {
+      const rules = [["Base risk",`+${RISK_CONFIG.baseRisk}`],["Exact answer",`${RISK_CONFIG.answer.exactCorrect}`],["Each incorrect selection",`+${RISK_CONFIG.answer.perIncorrectSelection}`],["Each missed target",`+${RISK_CONFIG.answer.perMissedCorrectTile}`],[`Completion under ${RISK_CONFIG.completionTime.ultraFastUnderSeconds}s`,`+${RISK_CONFIG.completionTime.ultraFastPoints}`],[`Completion ${RISK_CONFIG.completionTime.ultraFastUnderSeconds}–${RISK_CONFIG.completionTime.fastThroughSeconds}s`,`+${RISK_CONFIG.completionTime.fastPoints}`],[`Completion over ${RISK_CONFIG.completionTime.slowOverSeconds}s`,`+${RISK_CONFIG.completionTime.slowPoints}`],[`First click under ${RISK_CONFIG.firstClick.suspiciousUnderSeconds}s`,`+${RISK_CONFIG.firstClick.suspiciousPoints}`],[`Distance under ${RISK_CONFIG.movement.limitedDistanceUnderPx}px`,`+${RISK_CONFIG.movement.limitedDistancePoints}`],["Exact + under 2s pattern",`+${RISK_CONFIG.automationPattern.exactAndUltraFastPoints}`],[`Straightness over ${RISK_CONFIG.movement.straightnessOver}`,`+${RISK_CONFIG.movement.straightnessPoints}`],["Each correction",`${RISK_CONFIG.correction.pointsEach} (max ${RISK_CONFIG.correction.maximumReduction})`],["Natural speed variation",`${RISK_CONFIG.movement.naturalVariationPoints}`],["Imperfect-answer ceiling",`${RISK_CONFIG.answer.imperfectScoreCap}`],["Classifications",`0–${RISK_CONFIG.classifications.lowMax} HUMAN · ${RISK_CONFIG.classifications.lowMax+1}–${RISK_CONFIG.classifications.uncertainMax} UNCERTAIN · ${RISK_CONFIG.classifications.uncertainMax+1}–100 BOT`]];
+      document.getElementById("rule-list").innerHTML = rules.map(([label,value])=>`<li><span><span class="tag tag--scoring">USED</span> ${label}</span><span class="rule-value">${value}</span></li>`).join("") + `<li><span><span class="tag tag--observed">OBSERVED</span> Live speed, UI clicks, idle time, focus and dog reactions</span><span class="rule-value">DISPLAY ONLY</span></li>`;
     }
 
-    function resetSelection(announce = true) {
-      selectedTiles.clear();
-      [...grid.children].forEach((button, index) => {
-        const row = Math.floor(index / 3) + 1;
-        const column = (index % 3) + 1;
-        button.setAttribute("aria-pressed", "false");
-        button.setAttribute("aria-label", `Tile ${index + 1}, row ${row}, column ${column}. Not selected.`);
-      });
-      selectionCount.textContent = "0 SELECTED";
-      if (announce) announcer.textContent = "Selection cleared.";
-    }
+    const App = (() => {
+      const selected = new Set();
+      const conditions = new Set();
+      const tileMemory = Array.from({length:9},()=>({ awaitingReselect:false, cycles:0 }));
+      let currentTestIndex = 0;
+      let attemptNumber = 0;
+      let active = false;
+      let isSimulating = false;
+      let lastResult = null;
+      let verifyHoverTimer = 0;
+      let challengeInside = false;
+      let pageBlurred = false;
+      let wasHidden = false;
+      let timerFrame = 0;
+      function markCondition(key) { if (conditions.has(key)) return false; conditions.add(key); return true; }
+      function currentTest() { return TEST_SETS[currentTestIndex]; }
+      function showView(name, focusSelector) { ["intro","test","analysis","result"].forEach(key => { UI[key].hidden = key !== name; }); if (focusSelector) requestAnimationFrame(() => document.querySelector(focusSelector)?.focus({preventScroll:true})); }
+      function setControlsDisabled(disabled) { [UI.verify, UI.reset, UI.change].forEach(button => { button.disabled = disabled; }); [...UI.grid.children].forEach(button => { button.disabled = disabled; }); UI.grid.setAttribute("aria-busy", String(disabled)); }
+      function updateTestSet() { const test = currentTest(); UI.image.src = test.image; UI.instruction.textContent = test.instruction; document.getElementById("test-set-label").textContent = `${test.label} (${currentTestIndex+1}/${TEST_SETS.length})`; }
+      function clearSelection(announce = false) { selected.clear(); [...UI.grid.children].forEach((button,index) => { button.setAttribute("aria-pressed","false"); button.setAttribute("aria-label",`Image ${String(index+1).padStart(2,"0")}, row ${Math.floor(index/3)+1}, column ${index%3+1}. Not selected.`); button.classList.remove("is-auto-clicking"); }); UI.selection.textContent = "0 SELECTED"; if (announce) { ActivityLog.write("Selection reset."); UI.announcer.textContent = "Selection cleared."; } }
+      function resetAttemptState() { conditions.clear(); tileMemory.forEach(item => { item.awaitingReselect=false; item.cycles=0; }); clearTimeout(verifyHoverTimer); verifyHoverTimer=0; challengeInside=false; pageBlurred=false; wasHidden=false; DogSystem.reset(); clearSelection(false); const inputs=document.getElementById("actual-inputs"); inputs.className="placeholder"; inputs.textContent="Complete the challenge to reveal the exact input used by the score engine."; const reasons=document.getElementById("actual-reasons"); reasons.className="placeholder"; reasons.textContent="No live risk score is shown. Rule deltas appear after submission."; }
+      function startAttempt({ simulated=false, message="Session started. Scoring timer started now." }={}) { active=true; isSimulating=simulated; attemptNumber+=1; lastResult=null; resetAttemptState(); updateTestSet(); setControlsDisabled(simulated); ActivityLog.reset(message); Telemetry.start(simulated); UI.system.textContent=simulated?"BOT DEMO RUNNING":"RECORDING BEHAVIOR"; document.getElementById("attempt-label").textContent=`ATTEMPT ${String(attemptNumber).padStart(2,"0")}`; showView("test",".captcha-tile"); runTimer(); }
+      function runTimer() { cancelAnimationFrame(timerFrame); const tick=()=>{ if(!active)return; const metrics=Telemetry.scoringSnapshot(); document.getElementById("test-timer").textContent=formatClock(performance.now()-metrics.startedAt); timerFrame=requestAnimationFrame(tick); }; timerFrame=requestAnimationFrame(tick); }
+      function toggleTile(button,index,automated=false) { if(!active || (isSimulating&&!automated)) return; const wasSelected=selected.has(index); Telemetry.recordImageClick(wasSelected); if(wasSelected){ selected.delete(index); tileMemory[index].awaitingReselect=true; ActivityLog.write(`Image ${String(index+1).padStart(2,"0")} deselected. Selection correction recorded.`); } else { selected.add(index); if(tileMemory[index].awaitingReselect){ tileMemory[index].cycles+=1; tileMemory[index].awaitingReselect=false; ActivityLog.write(`Image ${String(index+1).padStart(2,"0")} selected again. Correction cycle ${tileMemory[index].cycles}.`); if(tileMemory[index].cycles>=DOG_CONFIG.correctionCycles && markCondition("dachshund")){ ActivityLog.write(`Image ${String(index+1).padStart(2,"0")} completed ${DOG_CONFIG.correctionCycles} deselect–reselect cycles.`); DogSystem.request("dachshund"); } } else ActivityLog.write(`Image ${String(index+1).padStart(2,"0")} selected.`); } const pressed=selected.has(index); button.setAttribute("aria-pressed",String(pressed)); button.setAttribute("aria-label",`Image ${String(index+1).padStart(2,"0")}, row ${Math.floor(index/3)+1}, column ${index%3+1}. ${pressed?"Selected":"Not selected"}.`); UI.selection.textContent=`${selected.size} SELECTED`; UI.announcer.textContent=`Image ${index+1} ${pressed?"selected":"deselected"}. ${selected.size} selected.`; }
+      async function simulateBot() { startAttempt({simulated:true,message:"Bot demonstration started. Scoring timer started now."}); ActivityLog.write("Automated selection sequence initialized."); await wait(RISK_CONFIG.simulation.firstSelectionDelayMs); for(const [position,index] of currentTest().correctTiles.entries()){ const button=UI.grid.children[index]; button.classList.add("is-auto-clicking"); toggleTile(button,index,true); ActivityLog.write(`BOT DEMO clicked correct image ${String(index+1).padStart(2,"0")} (${position+1}/${currentTest().correctTiles.length}).`); await wait(RISK_CONFIG.simulation.betweenSelectionsMs); button.classList.remove("is-auto-clicking"); } ActivityLog.write("BOT DEMO initiated VERIFY automatically."); await wait(RISK_CONFIG.simulation.beforeVerifyMs); isSimulating=false; await submit(); }
+      async function submit() { if(!active)return; active=false; cancelAnimationFrame(timerFrame); clearTimeout(verifyHoverTimer); DogSystem.stopProcessDogs(); ActivityLog.write("Answers submitted."); const metrics=Telemetry.freeze(); setControlsDisabled(true); UI.system.textContent="ANALYZING TRACES"; showView("analysis","#analysis-title"); const steps=["Reading cursor movement...","Measuring response time...","Checking selection accuracy...","Comparing behavioral pattern...","Calculating risk score..."]; const bar=document.getElementById("segment-bar"); const log=document.getElementById("analysis-log"); bar.innerHTML=""; log.innerHTML=""; for(let i=0;i<20;i++){ const segment=document.createElement("span"); segment.className="segment"; bar.appendChild(segment); } for(const [index,step] of steps.entries()){ document.getElementById("analysis-current").textContent=step; const line=document.createElement("div"); line.textContent=`> ${step}`; log.appendChild(line); [...bar.children].forEach((segment,i)=>segment.classList.toggle("is-filled",i<(index+1)*4)); bar.setAttribute("aria-valuenow",String((index+1)*20)); await wait(prefersReducedMotion.matches?70:RISK_CONFIG.analysis.stepDelayMs); } lastResult=ScoreEngine.evaluate(metrics,selected,currentTest()); renderResult(lastResult); renderActualRules(lastResult); setControlsDisabled(false); UI.system.textContent="RESULT FROZEN"; showView("result","#result-classification"); ActivityLog.write(`Result generated: ${lastResult.classification}, risk score ${lastResult.score}.`); UI.announcer.textContent=`${lastResult.classification}. Risk score ${lastResult.score} out of 100.`; if(lastResult.exactCorrect && lastResult.level==="high" && markCondition("pomeranian")){ ActivityLog.write("All answers were correct, but the scoring model returned HIGH RISK."); DogSystem.request("pomeranian",{force:true}); } }
+      function renderResult(result) { const banner=document.getElementById("result-banner"); banner.dataset.level=result.level; document.getElementById("risk-score").textContent=String(result.score); document.getElementById("result-classification").textContent=result.classification; document.getElementById("result-decision").textContent=result.decision; const avatars={low:["human","Pixel human avatar"],uncertain:["uncertain","Pixel uncertain human-computer avatar"],high:["bot","Pixel bot avatar"]}; const avatar=document.getElementById("result-avatar"); avatar.dataset.avatar=avatars[result.level][0]; avatar.setAttribute("aria-label",avatars[result.level][1]); const meanings={low:"The recorded traces fell inside this simulator’s narrow low-risk range.",uncertain:result.exactCorrect?"The answer was correct, but the behavioral signals were mixed.":"The answer was imperfect. That indicates task failure, not proof of automation.",high:"A perfect answer submitted at machine-like speed triggered the bot-like pattern."}; document.getElementById("result-summary").textContent=`${meanings[result.level]} This is a rule-based comparison, not knowledge of who you are.`; const rows=[["Completion",`${result.completionSeconds.toFixed(2)} s`],["Accuracy",`${result.accuracy.toFixed(0)}%`],["Distance",`${Math.round(result.totalDistance)} px`],["Corrections",String(result.corrections)],["Wrong",String(result.incorrectSelections)],["Missed",String(result.missedCorrectTiles)],["Path samples",String(result.movementCount)],["Image clicks",String(result.imageClicks)]]; document.getElementById("result-metrics").innerHTML=rows.map(([label,value])=>`<div><dt>${label}</dt><dd>${value}</dd></div>`).join(""); }
+      function renderActualRules(result) { const inputs=[["Completion time",`${result.completionSeconds.toFixed(2)} s`],["First image click",result.firstClickSeconds===null?"none":`${result.firstClickSeconds.toFixed(2)} s`],["Answer accuracy",`${result.accuracy.toFixed(0)}%`],["Incorrect selections",String(result.incorrectSelections)],["Missed target tiles",String(result.missedCorrectTiles)],["Mouse distance",`${Math.round(result.totalDistance)} px`],["Movement samples",String(result.movementCount)],["Path straightness",result.straightness.toFixed(2)],["Speed variation",result.speedVariation.toFixed(2)],["Selection corrections",String(result.corrections)],["Observed UI clicks",`${result.displayClicks} (display only)`],["Stored path points",`${result.pathPointCount} (display only)`]]; const inputBox=document.getElementById("actual-inputs"); inputBox.className=""; inputBox.innerHTML=`<ul class="input-list">${inputs.map(([label,value])=>`<li><span>${label}</span><strong>${value}</strong></li>`).join("")}</ul>`; const reasonBox=document.getElementById("actual-reasons"); reasonBox.className=""; reasonBox.innerHTML=`<ul class="reason-list">${result.reasons.map(reason=>{const sign=reason.delta>0?"+":reason.delta<0?"−":"";const cls=reason.delta>0?"delta-positive":reason.delta<0?"delta-negative":"";return `<li><span>${reason.label}</span><strong class="${cls}">${sign}${Math.abs(reason.delta)}</strong></li>`;}).join("")}<li><span>Final classification</span><strong>${result.score} / ${result.classification}</strong></li></ul>`; }
+      function changeTest() { if(!active)return; currentTestIndex=(currentTestIndex+1)%TEST_SETS.length; startAttempt({message:`Test image changed to ${TEST_SETS[currentTestIndex].label}. Scoring timer restarted.`}); }
+      function goHome() { active=false; isSimulating=false; cancelAnimationFrame(timerFrame); clearTimeout(verifyHoverTimer); DogSystem.reset(); Telemetry.standby(); clearSelection(false); UI.system.textContent="SYSTEM READY"; showView("intro","#start-button"); ActivityLog.reset("Interface ready. Scoring timer is idle."); }
+      function createTiles() { const fragment=document.createDocumentFragment(); for(let index=0;index<9;index+=1){ const button=document.createElement("button"); button.type="button"; button.className="captcha-tile"; button.dataset.index=String(index); button.setAttribute("aria-pressed","false"); button.setAttribute("aria-label",`Image ${String(index+1).padStart(2,"0")}, row ${Math.floor(index/3)+1}, column ${index%3+1}. Not selected.`); button.innerHTML='<span class="tile-check" aria-hidden="true">✓</span>'; button.addEventListener("click",()=>toggleTile(button,index)); button.addEventListener("pointerenter",()=>{if(active)ActivityLog.write(`Hovering over image ${String(index+1).padStart(2,"0")}.`);}); fragment.appendChild(button); } UI.grid.appendChild(fragment); }
 
-    function setTestControlsDisabled(disabled) {
-      ["reset-button", "change-image-button", "verify-button", "simulate-bot-button"].forEach(id => {
-        document.getElementById(id).disabled = disabled;
-      });
-      [...grid.children].forEach(button => { button.disabled = disabled; });
-      grid.setAttribute("aria-busy", String(disabled));
-    }
+      createTiles(); updateTestSet(); renderRuleBook();
+      document.getElementById("start-button").addEventListener("click",()=>startAttempt());
+      UI.simulate.addEventListener("click",simulateBot);
+      UI.reset.addEventListener("click",()=>clearSelection(true));
+      UI.change.addEventListener("click",changeTest);
+      UI.verify.addEventListener("click",submit);
+      document.getElementById("try-again-button").addEventListener("click",()=>startAttempt({message:"Test restarted. Scoring timer started now."}));
+      document.getElementById("home-button").addEventListener("click",goHome);
+      document.getElementById("challenge-region").addEventListener("pointerenter",()=>{if(active&&!challengeInside){challengeInside=true;ActivityLog.write("Cursor entered the challenge area.");}});
+      document.getElementById("challenge-region").addEventListener("pointerleave",()=>{if(active&&challengeInside){challengeInside=false;ActivityLog.write("Cursor left the challenge area.");}});
+      UI.verify.addEventListener("pointerenter",()=>{if(!active||UI.verify.disabled)return;ActivityLog.write("Hovering over VERIFY.");clearTimeout(verifyHoverTimer);verifyHoverTimer=window.setTimeout(()=>{if(active&&!UI.verify.disabled&&UI.verify.matches(":hover")&&markCondition("shiba")){ActivityLog.write(`Cursor hovered over VERIFY for ${(DOG_CONFIG.verifyHoverMs/1000).toFixed(0)} seconds.`);DogSystem.request("shiba");}},DOG_CONFIG.verifyHoverMs);});
+      UI.verify.addEventListener("pointerleave",()=>clearTimeout(verifyHoverTimer));
+      window.addEventListener("blur",()=>{if(active&&!pageBlurred){pageBlurred=true;ActivityLog.write("Page lost focus.");Telemetry.breakPath();}});
+      window.addEventListener("focus",()=>{if(active&&pageBlurred){pageBlurred=false;ActivityLog.write("Page regained focus.");Telemetry.breakPath();}});
+      document.addEventListener("visibilitychange",()=>{if(!active)return;if(document.hidden){wasHidden=true;ActivityLog.write("Page became hidden.");Telemetry.breakPath();}else{ActivityLog.write("Page became visible again.");Telemetry.breakPath();if(wasHidden&&markCondition("husky")){ActivityLog.write("A hidden page returned to the visible state.");DogSystem.request("husky");}wasHidden=false;}});
+      return Object.freeze({ markCondition, startAttempt, submit });
+    })();
 
-    function startAttempt() {
-      isSimulating = false;
-      resetSelection(false);
-      metrics = freshMetrics();
-      metrics.active = true;
-      metrics.startedAt = performance.now();
-      pendingResult = null;
-      document.body.classList.remove("is-analyzing", "is-simulating");
-      setTestControlsDisabled(false);
-      document.getElementById("system-status").textContent = "TRACKING ACTIVE";
-      showScreen("test-screen", ".captcha-tile");
-    }
-
-    async function simulateBotAttempt() {
-      if (isSimulating) return;
-      startAttempt();
-      isSimulating = true;
-      metrics.simulated = true;
-      setTestControlsDisabled(true);
-      document.body.classList.add("is-simulating");
-      document.getElementById("system-status").textContent = "BOT DEMO: AUTO-SELECTING";
-      announcer.textContent = "Bot simulation started. Correct tiles will be selected automatically.";
-
-      await wait(RISK_CONFIG.simulation.firstSelectionDelayMs);
-      for (const [position, index] of currentTest().correctTiles.entries()) {
-        const button = grid.children[index];
-        button.classList.add("is-auto-clicking");
-        toggleTile(button, index, true);
-        document.getElementById("system-status").textContent = `BOT DEMO: CLICK ${position + 1}/${currentTest().correctTiles.length}`;
-        await wait(RISK_CONFIG.simulation.betweenSelectionsMs);
-        button.classList.remove("is-auto-clicking");
-      }
-
-      document.getElementById("system-status").textContent = "BOT DEMO: AUTO-VERIFY";
-      announcer.textContent = "All correct tiles selected. Submitting automatically.";
-      await wait(RISK_CONFIG.simulation.beforeVerifyMs);
-      document.body.classList.remove("is-simulating");
-      isSimulating = false;
-      await verifyAttempt();
-    }
-
-    function sampleMouse(event) {
-      if (!metrics.active || metrics.simulated) return;
-      const now = performance.now();
-      if (now - metrics.lastSampleAt < RISK_CONFIG.movement.sampleIntervalMs) return;
-
-      const point = { x: event.clientX, y: event.clientY, time: now };
-      if (metrics.previousPoint) {
-        const dx = point.x - metrics.previousPoint.x;
-        const dy = point.y - metrics.previousPoint.y;
-        const distance = Math.hypot(dx, dy);
-        const elapsed = point.time - metrics.previousPoint.time;
-        if (distance >= 1 && elapsed > 0) {
-          metrics.totalDistance += distance;
-          metrics.movementDurationMs += elapsed;
-          metrics.movementCount += 1;
-          metrics.speeds.push(distance / (elapsed / 1000));
-        }
-      } else {
-        metrics.firstPoint = point;
-      }
-      metrics.previousPoint = point;
-      metrics.lastPoint = point;
-      metrics.lastSampleAt = now;
-    }
-
-    function coefficientOfVariation(values) {
-      if (!values.length) return 0;
-      const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-      if (!mean) return 0;
-      const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / values.length;
-      return Math.sqrt(variance) / mean;
-    }
-
-    function calculateResult() {
-      const now = metrics.verifiedAt;
-      const completionSeconds = (now - metrics.startedAt) / 1000;
-      const firstClickSeconds = metrics.firstImageClickAt === null ? null : (metrics.firstImageClickAt - metrics.startedAt) / 1000;
-      const correctSet = new Set(currentTest().correctTiles);
-      const incorrectSelections = [...selectedTiles].filter(index => !correctSet.has(index)).length;
-      const missedCorrectTiles = currentTest().correctTiles.filter(index => !selectedTiles.has(index)).length;
-      const correctTileDecisions = CAPTCHA_TILE_COUNT - incorrectSelections - missedCorrectTiles;
-      const accuracy = (correctTileDecisions / CAPTCHA_TILE_COUNT) * 100;
-      const exactCorrect = incorrectSelections === 0 && missedCorrectTiles === 0;
-      const ultraFast = completionSeconds < RISK_CONFIG.completionTime.ultraFastUnderSeconds;
-      const directDistance = metrics.firstPoint && metrics.lastPoint
-        ? Math.hypot(metrics.lastPoint.x - metrics.firstPoint.x, metrics.lastPoint.y - metrics.firstPoint.y)
-        : 0;
-      const straightness = metrics.totalDistance > 0 ? Math.min(1, directDistance / metrics.totalDistance) : 1;
-      const speedVariation = coefficientOfVariation(metrics.speeds);
-      const averageSpeed = metrics.movementDurationMs > 0 ? metrics.totalDistance / (metrics.movementDurationMs / 1000) : 0;
-      const reasons = [{ label: "Base risk", delta: RISK_CONFIG.baseRisk }];
-      let score = RISK_CONFIG.baseRisk;
-
-      function apply(label, delta) {
-        score += delta;
-        reasons.push({ label, delta });
-      }
-
-      if (exactCorrect) apply("Correct answer", RISK_CONFIG.answer.exactCorrect);
-      if (incorrectSelections > 0) apply(`${incorrectSelections} incorrect selection${incorrectSelections === 1 ? "" : "s"}`, incorrectSelections * RISK_CONFIG.answer.perIncorrectSelection);
-      if (missedCorrectTiles > 0) apply(`${missedCorrectTiles} missed target tile${missedCorrectTiles === 1 ? "" : "s"}`, missedCorrectTiles * RISK_CONFIG.answer.perMissedCorrectTile);
-
-      if (ultraFast) {
-        apply("Unusually fast response", RISK_CONFIG.completionTime.ultraFastPoints);
-      } else if (completionSeconds <= RISK_CONFIG.completionTime.fastThroughSeconds) {
-        apply("Fast response", RISK_CONFIG.completionTime.fastPoints);
-      } else if (completionSeconds > RISK_CONFIG.completionTime.slowOverSeconds) {
-        apply("Long completion time", RISK_CONFIG.completionTime.slowPoints);
-      }
-
-      if (firstClickSeconds !== null && firstClickSeconds < RISK_CONFIG.firstClick.suspiciousUnderSeconds) {
-        apply("Near-instant first selection", RISK_CONFIG.firstClick.suspiciousPoints);
-      }
-
-      if (metrics.totalDistance < RISK_CONFIG.movement.limitedDistanceUnderPx) {
-        apply("Very limited cursor movement", RISK_CONFIG.movement.limitedDistancePoints);
-      }
-
-      if (exactCorrect && ultraFast) {
-        apply("Perfect answer at machine-like speed", RISK_CONFIG.automationPattern.exactAndUltraFastPoints);
-      }
-
-      if (metrics.totalDistance >= RISK_CONFIG.movement.minimumDistanceForStraightnessPx && straightness > RISK_CONFIG.movement.straightnessOver) {
-        apply("Cursor path was unusually straight", RISK_CONFIG.movement.straightnessPoints);
-      }
-
-      if (metrics.corrections > 0) {
-        const correctionDelta = Math.max(RISK_CONFIG.correction.maximumReduction, metrics.corrections * RISK_CONFIG.correction.pointsEach);
-        apply(`${metrics.corrections} selection correction${metrics.corrections === 1 ? "" : "s"}`, correctionDelta);
-      }
-
-      const naturalVariation = metrics.movementCount >= RISK_CONFIG.movement.minimumSamplesForVariation && speedVariation >= RISK_CONFIG.movement.naturalVariationCvAtLeast;
-      if (naturalVariation) apply("Natural speed variation", RISK_CONFIG.movement.naturalVariationPoints);
-
-      if (!exactCorrect && score > RISK_CONFIG.answer.imperfectScoreCap) {
-        apply("Imperfect answer limits bot certainty", RISK_CONFIG.answer.imperfectScoreCap - score);
-      }
-
-      score = Math.max(0, Math.min(100, Math.round(score)));
-      const level = score <= RISK_CONFIG.classifications.lowMax ? "low" : score <= RISK_CONFIG.classifications.uncertainMax ? "uncertain" : "high";
-      const labels = {
-        low: { classification: "LOW RISK", decision: "ACCESS GRANTED" },
-        uncertain: { classification: "UNCERTAIN", decision: "ADDITIONAL VERIFICATION REQUIRED" },
-        high: { classification: "HIGH RISK", decision: "ACCESS DENIED" }
-      };
-
-      return {
-        score,
-        level,
-        classification: labels[level].classification,
-        decision: labels[level].decision,
-        completionSeconds,
-        firstClickSeconds,
-        incorrectSelections,
-        missedCorrectTiles,
-        accuracy,
-        exactCorrect,
-        ultraFast,
-        straightness,
-        speedVariation,
-        averageSpeed,
-        reasons,
-        imageClicks: metrics.imageClicks,
-        movementCount: metrics.movementCount,
-        totalDistance: metrics.totalDistance,
-        corrections: metrics.corrections,
-        simulated: metrics.simulated,
-        correctTileDecisions,
-        testId: currentTest().id
-      };
-    }
-
-    async function verifyAttempt() {
-      if (!metrics.active) return;
-      metrics.verifiedAt = performance.now();
-      metrics.active = false;
-      pendingResult = calculateResult();
-      setTestControlsDisabled(true);
-      document.body.classList.add("is-analyzing");
-      document.getElementById("system-status").textContent = "ANALYZING...";
-      showScreen("analysis-screen", "#analysis-title");
-      await runAnalysisSequence();
-      saveAttempt(pendingResult);
-      renderResult(pendingResult);
-      document.body.classList.remove("is-analyzing");
-      setTestControlsDisabled(false);
-      document.getElementById("system-status").textContent = "RESULT READY";
-      showScreen("result-screen", "#result-classification");
-    }
-
-    function wait(ms) { return new Promise(resolve => window.setTimeout(resolve, ms)); }
-
-    async function runAnalysisSequence() {
-      const steps = [
-        "Reading cursor movement...",
-        "Measuring response time...",
-        "Checking selection accuracy...",
-        "Comparing behavioral pattern...",
-        "Calculating risk score..."
-      ];
-      const bar = document.getElementById("segment-bar");
-      const log = document.getElementById("analysis-log");
-      const current = document.getElementById("analysis-current");
-      bar.innerHTML = Array.from({ length: 20 }, () => '<span class="segment"></span>').join("");
-      log.innerHTML = "";
-      bar.setAttribute("aria-valuenow", "0");
-
-      for (let index = 0; index < steps.length; index += 1) {
-        current.textContent = steps[index];
-        const line = document.createElement("p");
-        line.className = "analysis-line";
-        line.textContent = steps[index];
-        log.appendChild(line);
-        const filled = (index + 1) * 4;
-        [...bar.children].forEach((segment, segmentIndex) => segment.classList.toggle("is-filled", segmentIndex < filled));
-        bar.setAttribute("aria-valuenow", String((index + 1) * 20));
-        await wait(prefersReducedMotion.matches ? 120 : RISK_CONFIG.analysis.stepDelayMs);
-      }
-    }
-
-    function renderResult(result) {
-      const banner = document.getElementById("result-banner");
-      banner.dataset.level = result.level;
-      document.getElementById("risk-score").textContent = String(result.score);
-      document.getElementById("result-classification").textContent = result.classification;
-      document.getElementById("result-decision").textContent = result.decision;
-
-      const avatarByLevel = {
-        low: { key: "human", label: "HUMAN PATTERN", description: "Cute pixel human avatar" },
-        uncertain: { key: "uncertain", label: "UNCERTAIN PATTERN", description: "Cute half-human half-computer pixel avatar" },
-        high: { key: "bot", label: "BOT-LIKE PATTERN", description: "Cute pixel computer bot avatar" }
-      };
-      const avatar = avatarByLevel[result.level];
-      const avatarViewport = document.getElementById("result-avatar");
-      avatarViewport.dataset.avatar = avatar.key;
-      avatarViewport.setAttribute("aria-label", avatar.description);
-      document.getElementById("avatar-label").textContent = avatar.label;
-
-      const positivePoints = result.reasons.filter(reason => reason.delta > 0 && reason.label !== "Base risk").reduce((sum, reason) => sum + reason.delta, 0);
-      const negativePoints = Math.abs(result.reasons.filter(reason => reason.delta < 0).reduce((sum, reason) => sum + reason.delta, 0));
-      const meaningByLevel = {
-        low: "A correct answer at a plausible pace fits this model's human-like range.",
-        uncertain: result.exactCorrect
-          ? "The answer was correct, but the behavioral traces were mixed."
-          : "An imperfect answer indicates task failure, not proof of automation.",
-        high: "A perfect answer submitted at machine-like speed triggered the bot-like pattern."
-      };
-      const runDescription = result.simulated ? "BOT DEMO auto-selected the answer." : "The attempt was completed manually.";
-      document.getElementById("result-saw").textContent = `${runDescription} ${result.correctTileDecisions} of 9 tile decisions matched; completion took ${result.completionSeconds.toFixed(2)} s.`;
-      document.getElementById("result-scored").textContent = `Starting from ${RISK_CONFIG.baseRisk}, triggered rules added ${positivePoints} points and removed ${negativePoints} points; imperfect answers cannot exceed ${RISK_CONFIG.answer.imperfectScoreCap}.`;
-      document.getElementById("result-means").textContent = meaningByLevel[result.level];
-
-      const metricRows = [
-        ["Completion Time", `${result.completionSeconds.toFixed(2)} s`],
-        ["Answer Accuracy", `${result.accuracy.toFixed(0)}%`],
-        ["Mouse Distance", `${Math.round(result.totalDistance)} px`],
-        ["Selection Corrections", String(result.corrections)],
-        ["Incorrect Selections", String(result.incorrectSelections)],
-        ["Missed Tiles", String(result.missedCorrectTiles)],
-        ["Image Clicks", String(result.imageClicks)],
-        ["Movement Samples", String(result.movementCount)]
-      ];
-      document.getElementById("metrics-grid").innerHTML = metricRows.map(([label, value]) => `<div class="metric"><dt>${label}</dt><dd>${value}</dd></div>`).join("");
-
-      document.getElementById("score-reasons").innerHTML = result.reasons.map(reason => {
-        const sign = reason.delta > 0 ? "+" : reason.delta < 0 ? "−" : "";
-        const value = Math.abs(reason.delta);
-        const className = reason.delta < 0 ? "is-negative" : reason.delta > 0 ? "is-positive" : "";
-        return `<li><span>${reason.label}</span><span class="reason-delta ${className}">${sign}${value}</span></li>`;
-      }).join("");
-
-      const firstClickText = result.firstClickSeconds === null ? "no tile selected" : `${result.firstClickSeconds.toFixed(2)}s to first selection`;
-      document.getElementById("trace-note").textContent = `TRACE DETAIL: ${firstClickText} · average speed ${Math.round(result.averageSpeed)} px/s · path straightness ${result.straightness.toFixed(2)} · speed variation ${result.speedVariation.toFixed(2)}`;
-    }
-
-    function loadHistory() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-        return Array.isArray(parsed) ? parsed.slice(0, 5) : [];
-      } catch {
-        return [];
-      }
-    }
-
-    function saveAttempt(result) {
-      const nextAttempt = history.length ? Math.max(...history.map(item => item.attempt || 0)) + 1 : 1;
-      history.unshift({
-        attempt: nextAttempt,
-        score: result.score,
-        classification: result.classification,
-        completionSeconds: Number(result.completionSeconds.toFixed(2)),
-        accuracy: Math.round(result.accuracy),
-        testId: result.testId
-      });
-      history = history.slice(0, 5);
-      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch { /* Session still works if storage is unavailable. */ }
-      renderHistory();
-    }
-
-    function renderHistory() {
-      const list = document.getElementById("history-list");
-      if (!list) return;
-      if (!history.length) {
-        list.innerHTML = '<li class="history-empty">No attempts yet. Start the test to create a local record.</li>';
-        return;
-      }
-      list.innerHTML = history.map(item => `<li class="history-item"><span>#${item.attempt}</span><strong>${item.score}</strong><span><span class="history-class">${item.classification}</span>${item.completionSeconds.toFixed(2)}s · ${item.accuracy}% accuracy</span></li>`).join("");
-    }
-
-    function clearHistory() {
-      if (history.length && !window.confirm("Clear all locally stored test history?")) return;
-      history = [];
-      try { localStorage.removeItem(HISTORY_KEY); } catch { /* No-op. */ }
-      renderHistory();
-      announcer.textContent = "Test history cleared.";
-    }
-
-    function goHome() {
-      metrics.active = false;
-      isSimulating = false;
-      pendingResult = null;
-      resetSelection(false);
-      document.body.classList.remove("is-analyzing", "is-simulating");
-      setTestControlsDisabled(false);
-      document.getElementById("system-status").textContent = "SYSTEM READY";
-      showScreen("intro-screen", "#start-button");
-      announcer.textContent = "Returned to the home screen.";
-    }
-
-    function initCustomCursor() {
-      const cursor = document.getElementById("pixel-cursor");
-      let x = -100;
-      let y = -100;
-      let frame = 0;
-      document.addEventListener("mousemove", event => {
-        x = event.clientX;
-        y = event.clientY;
-        sampleMouse(event);
-        if (!frame) frame = requestAnimationFrame(() => {
-          cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-          frame = 0;
-        });
-      }, { passive: true });
-
-      document.addEventListener("mousedown", event => {
-        if (prefersReducedMotion.matches || event.button !== 0) return;
-        const offsets = [[-24,-20],[24,-18],[-22,24],[24,24],[0,30]];
-        offsets.forEach(([dx, dy], index) => {
-          const spark = document.createElement("span");
-          spark.className = "click-spark";
-          spark.style.left = `${event.clientX + 4}px`;
-          spark.style.top = `${event.clientY + 4}px`;
-          spark.style.setProperty("--dx", `${dx}px`);
-          spark.style.setProperty("--dy", `${dy}px`);
-          spark.style.background = index % 2 ? "#ff2f65" : "#fff200";
-          document.body.appendChild(spark);
-          window.setTimeout(() => spark.remove(), 380);
-        });
-      });
-    }
-
-    document.getElementById("start-button").addEventListener("click", startAttempt);
-    document.getElementById("simulate-bot-button").addEventListener("click", simulateBotAttempt);
-    document.getElementById("try-again-button").addEventListener("click", startAttempt);
-    document.getElementById("reset-button").addEventListener("click", () => resetSelection(true));
-    document.getElementById("change-image-button").addEventListener("click", changeTestImage);
-    document.getElementById("verify-button").addEventListener("click", verifyAttempt);
-    document.getElementById("home-button").addEventListener("click", goHome);
-
-    createCaptchaTiles();
-    applyCurrentTestSet();
-    renderHistory();
-    initCustomCursor();
-
-    /* Exposed read-only for classroom inspection and easier rule discussion. */
-    window.CAPTCHA_SIMULATOR_CONFIG = Object.freeze({ risk: RISK_CONFIG, testSets: TEST_SETS, tileCount: CAPTCHA_TILE_COUNT });
+    const cursor=document.getElementById("pixel-cursor");
+    let cursorFrame=0, cursorX=-100, cursorY=-100;
+    document.addEventListener("pointermove",event=>{cursorX=event.clientX;cursorY=event.clientY;cursor.classList.add("is-visible");if(!cursorFrame)cursorFrame=requestAnimationFrame(()=>{cursor.style.transform=`translate3d(${cursorX}px,${cursorY}px,0)`;cursorFrame=0;});},{passive:true});
+    document.addEventListener("mouseleave",()=>cursor.classList.remove("is-visible"));
+    ActivityLog.reset("Interface ready. Scoring timer is idle.");
+    Telemetry.standby();
+    window.CAPTCHA_V1 = Object.freeze({ riskConfig: RISK_CONFIG, dogConfig: DOG_CONFIG, testSets: TEST_SETS, scoreEngine: ScoreEngine });
   </script>
 </body>
 </html>
