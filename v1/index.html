@@ -1021,6 +1021,219 @@
         transform-origin: bottom right;
       }
     }
+
+    /* V1 desktop composition: computer left, readable tracking station right. */
+    @media (min-width: 1101px) {
+      .desktop {
+        grid-template-columns: minmax(720px, 980px) 350px;
+        gap: 24px;
+        justify-content: center;
+        align-items: center;
+        padding: 14px 24px;
+      }
+
+      .computer-shell {
+        width: min(980px, calc((100dvh - 28px) * 1.333333));
+        margin: 0;
+        justify-self: end;
+      }
+
+      .behavior-dock {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        width: 350px;
+        gap: 14px;
+        align-self: center;
+        transform: none;
+      }
+
+      #tracking-canvas { height: 230px; }
+      .activity-log { height: 196px; padding: 10px 12px; font-size: 15px; }
+      .behavior-window__bar { min-height: 34px; padding: 6px 8px; font-size: 15px; }
+    }
+
+    /* Keep all live UI safely inside the transparent CRT opening. */
+    .monitor-screen {
+      top: 8.35%;
+      left: 24.15%;
+      width: 47.85%;
+      height: 47.15%;
+      border-radius: 16% / 11%;
+    }
+
+    .screen-ui {
+      width: 142.8572%;
+      height: 142.8572%;
+      transform: scale(.70);
+    }
+
+    .monitor-screen .screen { padding-right: 28px; padding-left: 28px; }
+    .monitor-screen #test-screen { padding-right: 24px; padding-left: 24px; }
+    .monitor-screen #result-screen { padding: 44px 17px 8px; }
+    .monitor-screen .result-window { width: min(720px, calc(100% - 18px)); }
+
+    .win-button--bot { color: #7cff89; background: #111; }
+
+    .result-data-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin: 7px 0;
+    }
+
+    .result-data-grid > div {
+      min-width: 0;
+      padding: 6px 8px;
+      border: 2px inset #fff;
+      background: #f7f7f2;
+    }
+
+    .result-data-grid dt {
+      margin: 0 0 2px;
+      color: #333;
+      font: 700 14px/1.1 Arial, Helvetica, system-ui, sans-serif;
+    }
+
+    .result-data-grid dd {
+      margin: 0;
+      font: 700 18px/1.1 Arial, Helvetica, system-ui, sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-summary-reasons { font-size: 15px; line-height: 1.35; }
+    .result-summary-reasons h3 { font-size: 15px; }
+
+    .dog-meme {
+      position: fixed;
+      z-index: 950;
+      left: clamp(18px, 34vw, 520px);
+      bottom: 2px;
+      width: min(285px, calc(100vw - 24px));
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(72%) scale(.92);
+      transform-origin: bottom center;
+      transition: opacity .18s steps(2, end), transform .26s steps(3, end);
+    }
+
+    .dog-meme.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    .dog-meme__image {
+      display: block;
+      width: 100%;
+      height: 220px;
+      object-fit: contain;
+      object-position: center bottom;
+      filter: drop-shadow(5px 6px 0 rgba(0,0,0,.45));
+      transition: transform .16s steps(2, end);
+    }
+
+    .dog-meme.is-nudging .dog-meme__image { transform: scale(1.045); }
+    .dog-meme[data-kind="chihuahua"].is-visible .dog-meme__image { animation: dog-shake .38s steps(4, end) 2; }
+
+    .dog-bubble {
+      position: absolute;
+      z-index: 2;
+      top: -34px;
+      left: 54%;
+      min-width: 205px;
+      max-width: 275px;
+      padding: 10px 12px;
+      border: 3px solid #000;
+      color: #000;
+      background: #fff;
+      box-shadow: 5px 5px 0 var(--pink);
+      font: 700 15px/1.25 Arial, Helvetica, system-ui, sans-serif;
+    }
+
+    .dog-bubble::after {
+      position: absolute;
+      left: 22px;
+      bottom: -14px;
+      width: 18px;
+      height: 18px;
+      content: "";
+      border-right: 3px solid #000;
+      border-bottom: 3px solid #000;
+      background: #fff;
+      transform: skewY(35deg) rotate(35deg);
+    }
+
+    .dog-meme__close {
+      position: absolute;
+      z-index: 3;
+      top: -43px;
+      right: -5px;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: 0;
+      background: var(--silver);
+      box-shadow: var(--button-shadow);
+      font-weight: 900;
+    }
+
+    @keyframes dog-shake {
+      25% { transform: translateX(-5px) rotate(-2deg); }
+      75% { transform: translateX(5px) rotate(2deg); }
+    }
+
+    @media (max-width: 1100px) {
+      .desktop { min-height: 100dvh; overflow: auto; }
+      .dog-meme { left: 12px; }
+      .result-data-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .monitor-screen { top: 7.55%; left: 23.35%; width: 49.5%; height: 49.1%; }
+      .screen-ui { width: 133.3334%; height: 133.3334%; transform: scale(.75); }
+    }
+
+    /* The in-app preview is often just over 1000px wide: keep the tools beside the CRT there too. */
+    @media (min-width: 950px) and (max-width: 1100px) {
+      .desktop {
+        grid-template-columns: minmax(620px, 700px) 265px;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        padding: 8px;
+      }
+
+      .computer-shell {
+        width: min(700px, calc((100dvh - 16px) * 1.333333));
+        margin: 0;
+        justify-self: end;
+      }
+
+      .behavior-dock {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        width: 265px;
+        gap: 10px;
+        align-self: center;
+        transform: none;
+      }
+
+      #tracking-canvas { height: 170px; }
+      .activity-log { height: 156px; }
+      .screen-ui { width: 151.5152%; height: 151.5152%; transform: scale(.66); }
+    }
+
+    @media (max-width: 700px) {
+      .screen-ui { width: 238.0953%; height: 238.0953%; transform: scale(.42); }
+    }
+
+    @media (max-width: 520px) {
+      .screen-ui { width: 344.8276%; height: 344.8276%; transform: scale(.29); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dog-meme { transition: none; }
+      .dog-meme[data-kind="chihuahua"].is-visible .dog-meme__image { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -1044,6 +1257,7 @@
             <p class="system-ready"><span class="pixel-square" aria-hidden="true"></span> HUMAN.EXE is ready.</p>
             <div class="button-row">
               <button class="win-button win-button--primary" id="start-button" type="button">START TEST</button>
+              <button class="win-button win-button--bot" id="simulate-bot-button" type="button">SIMULATE BOT</button>
             </div>
           </div>
         </div>
@@ -1110,6 +1324,8 @@
               </div>
             </div>
 
+            <dl class="result-data-grid" id="result-data-grid" aria-label="Attempt data"></dl>
+
             <section class="result-summary-reasons" aria-labelledby="why-title">
               <h3 id="why-title">WHY THIS RESULT?</h3>
               <ul id="result-reasons"></ul>
@@ -1146,6 +1362,12 @@
       </section>
     </aside>
   </div>
+
+  <aside class="dog-meme" id="dog-meme" data-kind="" aria-label="Dog reaction" aria-hidden="true">
+    <p class="dog-bubble" id="dog-caption"></p>
+    <img class="dog-meme__image" id="dog-image" src="../assets/dog-shiba.png" width="640" height="640" alt="">
+    <button class="dog-meme__close" id="dog-close" type="button" tabindex="-1" aria-label="Dismiss dog reaction">×</button>
+  </aside>
 
   <div class="pixel-cursor" id="pixel-cursor" aria-hidden="true">
     <svg class="cursor-arrow" viewBox="0 0 44 52" shape-rendering="crispEdges">
@@ -1208,7 +1430,32 @@
       },
       analysis: {
         stepDelayMs: 460
+      },
+      simulation: {
+        firstSelectionDelayMs: 80,
+        betweenSelectionsMs: 110,
+        beforeVerifyMs: 140
       }
+    });
+
+    /* Meme reactions are display-only and never change the risk score. */
+    const DOG_CONFIG = Object.freeze({
+      cooldownMs: 8000,
+      visibleMs: 3800,
+      hoverNudgeMs: 1000,
+      idleTriggerMs: 4000,
+      rapidClickWindowMs: 1000,
+      rapidClickCount: 5,
+      correctionCycles: 3,
+      verifyHoverMs: 3000,
+      dogs: Object.freeze({
+        golden: Object.freeze({ image: "../assets/dog-golden.png", alt: "A blankly staring golden retriever", caption: "bro?" }),
+        chihuahua: Object.freeze({ image: "../assets/dog-chihuahua.png", alt: "A shocked Chihuahua", caption: "clicking harder won’t help." }),
+        dachshund: Object.freeze({ image: "../assets/dog-dachshund.png", alt: "A confused dachshund tilting its head", caption: "final answer? …final final?" }),
+        shiba: Object.freeze({ image: "../assets/dog-shiba.png", alt: "A suspicious Shiba Inu", caption: "it’s just a button." }),
+        husky: Object.freeze({ image: "../assets/dog-husky.png", alt: "An irritated husky", caption: "welcome back, suspicious citizen." }),
+        pomeranian: Object.freeze({ image: "../assets/dog-pomeranian.png", alt: "A smug Pomeranian wearing sunglasses", caption: "correct answers. suspicious vibes." })
+      })
     });
 
     /* Correct tile indices are zero-based and read left-to-right, top-to-bottom. */
@@ -1265,6 +1512,7 @@
     const selectedTiles = new Set();
     let currentTestIndex = 0;
     let pendingResult = null;
+    let isSimulating = false;
     let metrics = freshMetrics();
     let history = loadHistory();
     const trackingCanvas = document.getElementById("tracking-canvas");
@@ -1272,8 +1520,14 @@
     const trackingStateLabel = document.getElementById("tracking-state");
     const activityLog = document.getElementById("activity-log");
     let pauseLogTimer = 0;
+    let dogIdleTimer = 0;
+    let verifyHoverTimer = 0;
     let traceAnimationFrame = 0;
     let behaviorUI = freshBehaviorUI();
+    const dogConditions = new Set();
+    const correctionMemory = Array.from({ length: CAPTCHA_TILE_COUNT }, () => ({ awaitingReselect: false, cycles: 0 }));
+    let rapidClicks = [];
+    let pageWasHidden = false;
 
     function freshMetrics() {
       return {
@@ -1290,7 +1544,8 @@
         lastSampleAt: 0,
         speeds: [],
         imageClicks: 0,
-        corrections: 0
+        corrections: 0,
+        simulated: false
       };
     }
 
@@ -1305,6 +1560,85 @@
         clicks: []
       };
     }
+
+    const DogSystem = (() => {
+      const popup = document.getElementById("dog-meme");
+      const image = document.getElementById("dog-image");
+      const caption = document.getElementById("dog-caption");
+      const closeButton = document.getElementById("dog-close");
+      let current = null;
+      let lastShownAt = -Infinity;
+      let hideTimer = 0;
+      let hoverTimer = 0;
+      let nudgeUsed = false;
+
+      function hide(immediate = false) {
+        window.clearTimeout(hideTimer);
+        window.clearTimeout(hoverTimer);
+        popup.classList.remove("is-visible", "is-nudging");
+        popup.setAttribute("aria-hidden", "true");
+        closeButton.tabIndex = -1;
+        if (immediate || prefersReducedMotion.matches) {
+          current = null;
+          popup.dataset.kind = "";
+        } else {
+          window.setTimeout(() => {
+            if (!popup.classList.contains("is-visible")) {
+              current = null;
+              popup.dataset.kind = "";
+            }
+          }, 280);
+        }
+      }
+
+      function request(kind, options = {}) {
+        const now = performance.now();
+        if (!options.force && (current || now - lastShownAt < DOG_CONFIG.cooldownMs)) return false;
+        if (current) hide(true);
+        const dog = DOG_CONFIG.dogs[kind];
+        current = kind;
+        lastShownAt = now;
+        nudgeUsed = false;
+        popup.dataset.kind = kind;
+        image.src = dog.image;
+        image.alt = dog.alt;
+        caption.textContent = dog.caption;
+        popup.classList.remove("is-nudging");
+        popup.classList.add("is-visible");
+        popup.setAttribute("aria-hidden", "false");
+        closeButton.tabIndex = 0;
+        writeActivity(`${dog.alt} appeared.`);
+        announcer.textContent = `Dog reaction: ${dog.caption}`;
+        if (!options.keepUntilResume) hideTimer = window.setTimeout(() => hide(), DOG_CONFIG.visibleMs);
+        return true;
+      }
+
+      function resumeGolden() {
+        if (current !== "golden") return;
+        caption.textContent = "oh. you’re alive.";
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(() => hide(), 950);
+      }
+
+      function reset() {
+        hide(true);
+        lastShownAt = -Infinity;
+      }
+
+      popup.addEventListener("mouseenter", () => {
+        if (!current || nudgeUsed) return;
+        hoverTimer = window.setTimeout(() => {
+          if (!current || nudgeUsed) return;
+          nudgeUsed = true;
+          popup.classList.add("is-nudging");
+          caption.textContent = "the test is over there.";
+        }, DOG_CONFIG.hoverNudgeMs);
+      });
+      popup.addEventListener("mouseleave", () => window.clearTimeout(hoverTimer));
+      closeButton.addEventListener("click", () => hide());
+
+      return Object.freeze({ hide, request, reset, resumeGolden });
+    })();
 
     function setTrackingState(state) {
       trackingStateLabel.textContent = state;
@@ -1322,6 +1656,7 @@
 
     function schedulePauseLog() {
       window.clearTimeout(pauseLogTimer);
+      window.clearTimeout(dogIdleTimer);
       if (!behaviorUI.active) return;
       pauseLogTimer = window.setTimeout(() => {
         if (!behaviorUI.active || behaviorUI.paused) return;
@@ -1329,10 +1664,25 @@
         setTrackingState("PAUSED");
         writeActivity("Cursor paused.");
       }, BEHAVIOR_UI_CONFIG.pauseAfterMs);
+      if (!metrics.simulated) {
+        dogIdleTimer = window.setTimeout(() => {
+          if (!behaviorUI.active || dogConditions.has("golden")) return;
+          dogConditions.add("golden");
+          writeActivity("Cursor stayed still for 4 seconds.");
+          DogSystem.request("golden", { keepUntilResume: true });
+        }, DOG_CONFIG.idleTriggerMs);
+      }
     }
 
     function resetBehaviorUI(activate = false) {
       window.clearTimeout(pauseLogTimer);
+      window.clearTimeout(dogIdleTimer);
+      window.clearTimeout(verifyHoverTimer);
+      DogSystem.reset();
+      dogConditions.clear();
+      correctionMemory.forEach(item => { item.awaitingReselect = false; item.cycles = 0; });
+      rapidClicks = [];
+      pageWasHidden = false;
       behaviorUI = freshBehaviorUI();
       behaviorUI.active = activate;
       activityLog.replaceChildren();
@@ -1346,6 +1696,8 @@
 
     function pauseBehaviorUI() {
       window.clearTimeout(pauseLogTimer);
+      window.clearTimeout(dogIdleTimer);
+      window.clearTimeout(verifyHoverTimer);
       behaviorUI.active = false;
       behaviorUI.disconnected = true;
       setTrackingState("PAUSED");
@@ -1353,6 +1705,9 @@
 
     function freezeBehaviorUI() {
       window.clearTimeout(pauseLogTimer);
+      window.clearTimeout(dogIdleTimer);
+      window.clearTimeout(verifyHoverTimer);
+      DogSystem.hide();
       behaviorUI.active = false;
       behaviorUI.frozen = true;
       behaviorUI.disconnected = true;
@@ -1376,7 +1731,10 @@
       behaviorUI.disconnected = false;
       behaviorUI.paused = false;
       setTrackingState("LIVE");
-      if (resumed) writeActivity("Cursor moving again.");
+      if (resumed) {
+        writeActivity("Cursor moving again.");
+        DogSystem.resumeGolden();
+      }
       schedulePauseLog();
     }
 
@@ -1388,6 +1746,14 @@
         time: performance.now()
       });
       if (behaviorUI.clicks.length > BEHAVIOR_UI_CONFIG.maximumClickMarks) behaviorUI.clicks.shift();
+      const now = performance.now();
+      rapidClicks.push(now);
+      rapidClicks = rapidClicks.filter(time => now - time <= DOG_CONFIG.rapidClickWindowMs);
+      if (rapidClicks.length >= DOG_CONFIG.rapidClickCount && !dogConditions.has("chihuahua")) {
+        dogConditions.add("chihuahua");
+        writeActivity("Rapid clicking detected.");
+        DogSystem.request("chihuahua");
+      }
     }
 
     function disconnectTrace() {
@@ -1518,8 +1884,8 @@
       document.querySelector(".captcha-tile")?.focus();
     }
 
-    function toggleTile(button, index) {
-      if (!metrics.active) return;
+    function toggleTile(button, index, automated = false) {
+      if (!metrics.active || (isSimulating && !automated)) return;
       const wasSelected = selectedTiles.has(index);
       metrics.imageClicks += 1;
       if (metrics.firstImageClickAt === null) metrics.firstImageClickAt = performance.now();
@@ -1527,8 +1893,18 @@
       if (wasSelected) {
         selectedTiles.delete(index);
         metrics.corrections += 1;
+        correctionMemory[index].awaitingReselect = true;
       } else {
         selectedTiles.add(index);
+        if (correctionMemory[index].awaitingReselect) {
+          correctionMemory[index].awaitingReselect = false;
+          correctionMemory[index].cycles += 1;
+          if (correctionMemory[index].cycles >= DOG_CONFIG.correctionCycles && !dogConditions.has("dachshund")) {
+            dogConditions.add("dachshund");
+            writeActivity(`Image ${index + 1} was changed repeatedly.`);
+            DogSystem.request("dachshund");
+          }
+        }
       }
 
       const isSelected = selectedTiles.has(index);
@@ -1564,21 +1940,44 @@
       grid.setAttribute("aria-busy", String(disabled));
     }
 
-    function startAttempt() {
+    function startAttempt(options = {}) {
+      const simulated = Boolean(options.simulated);
+      isSimulating = simulated;
       resetSelection(false);
       metrics = freshMetrics();
       metrics.active = true;
       metrics.startedAt = performance.now();
+      metrics.simulated = simulated;
       pendingResult = null;
       document.body.classList.remove("is-analyzing");
-      setTestControlsDisabled(false);
+      setTestControlsDisabled(simulated);
       resetBehaviorUI(true);
-      document.getElementById("system-status").textContent = "TRACKING ACTIVE";
+      document.getElementById("system-status").textContent = simulated ? "BOT DEMO RUNNING" : "TRACKING ACTIVE";
       showScreen("test-screen", ".captcha-tile");
     }
 
+    async function simulateBotAttempt() {
+      if (isSimulating) return;
+      startAttempt({ simulated: true });
+      writeActivity("Bot simulation started.");
+      await wait(RISK_CONFIG.simulation.firstSelectionDelayMs);
+      for (const [position, index] of currentTest().correctTiles.entries()) {
+        const button = grid.children[index];
+        button.classList.add("is-auto-clicking");
+        toggleTile(button, index, true);
+        writeActivity(`Bot clicked image ${index + 1}.`);
+        document.getElementById("system-status").textContent = `BOT CLICK ${position + 1}/${currentTest().correctTiles.length}`;
+        await wait(RISK_CONFIG.simulation.betweenSelectionsMs);
+        button.classList.remove("is-auto-clicking");
+      }
+      writeActivity("Bot submitted automatically.");
+      await wait(RISK_CONFIG.simulation.beforeVerifyMs);
+      isSimulating = false;
+      await verifyAttempt();
+    }
+
     function sampleMouse(event) {
-      if (!metrics.active) return;
+      if (!metrics.active || metrics.simulated) return;
       const now = performance.now();
       if (now - metrics.lastSampleAt < RISK_CONFIG.movement.sampleIntervalMs) return;
 
@@ -1703,6 +2102,7 @@
         movementCount: metrics.movementCount,
         totalDistance: metrics.totalDistance,
         corrections: metrics.corrections,
+        simulated: metrics.simulated,
         correctTileDecisions,
         testId: currentTest().id
       };
@@ -1726,6 +2126,11 @@
       setTestControlsDisabled(false);
       document.getElementById("system-status").textContent = "RESULT READY";
       showScreen("result-screen", "#result-classification");
+      writeActivity(`Result: ${pendingResult.classification}, score ${pendingResult.score}.`);
+      if (pendingResult.exactCorrect && pendingResult.level === "high" && !dogConditions.has("pomeranian")) {
+        dogConditions.add("pomeranian");
+        DogSystem.request("pomeranian", { force: true });
+      }
     }
 
     function wait(ms) { return new Promise(resolve => window.setTimeout(resolve, ms)); }
@@ -1775,6 +2180,16 @@
       avatarViewport.dataset.avatar = avatar.key;
       avatarViewport.setAttribute("aria-label", avatar.description);
       document.getElementById("avatar-label").textContent = avatar.label;
+
+      const dataRows = [
+        ["Completion", `${result.completionSeconds.toFixed(2)} s`],
+        ["Accuracy", `${result.accuracy.toFixed(0)}%`],
+        ["Mouse distance", `${Math.round(result.totalDistance)} px`],
+        ["Image clicks", String(result.imageClicks)],
+        ["Corrections", String(result.corrections)],
+        ["Wrong / missed", `${result.incorrectSelections} / ${result.missedCorrectTiles}`]
+      ];
+      document.getElementById("result-data-grid").innerHTML = dataRows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
 
       const triggered = result.reasons.map(reason => reason.label);
       const summaries = [];
@@ -1837,11 +2252,13 @@
 
     function goHome() {
       metrics.active = false;
+      isSimulating = false;
       pendingResult = null;
       resetSelection(false);
       document.body.classList.remove("is-analyzing");
       setTestControlsDisabled(false);
       pauseBehaviorUI();
+      DogSystem.reset();
       document.getElementById("system-status").textContent = "SYSTEM READY";
       showScreen("intro-screen", "#start-button");
       announcer.textContent = "Returned to the home screen.";
@@ -1886,21 +2303,41 @@
       document.addEventListener("visibilitychange", () => {
         if (!metrics.active) return;
         if (document.hidden) {
+          pageWasHidden = true;
           disconnectTrace();
           writeActivity("Page hidden.");
         } else {
           behaviorUI.disconnected = true;
           writeActivity("Page visible.");
           setTrackingState("PAUSED");
+          if (pageWasHidden && !dogConditions.has("husky")) {
+            dogConditions.add("husky");
+            DogSystem.request("husky");
+          }
+          pageWasHidden = false;
         }
       });
     }
 
-    document.getElementById("start-button").addEventListener("click", startAttempt);
-    document.getElementById("try-again-button").addEventListener("click", startAttempt);
+    const verifyButton = document.getElementById("verify-button");
+    verifyButton.addEventListener("pointerenter", () => {
+      if (!metrics.active || verifyButton.disabled || metrics.simulated) return;
+      window.clearTimeout(verifyHoverTimer);
+      verifyHoverTimer = window.setTimeout(() => {
+        if (!metrics.active || verifyButton.disabled || !verifyButton.matches(":hover") || dogConditions.has("shiba")) return;
+        dogConditions.add("shiba");
+        writeActivity("Cursor waited over VERIFY.");
+        DogSystem.request("shiba");
+      }, DOG_CONFIG.verifyHoverMs);
+    });
+    verifyButton.addEventListener("pointerleave", () => window.clearTimeout(verifyHoverTimer));
+
+    document.getElementById("start-button").addEventListener("click", () => startAttempt());
+    document.getElementById("simulate-bot-button").addEventListener("click", simulateBotAttempt);
+    document.getElementById("try-again-button").addEventListener("click", () => startAttempt());
     document.getElementById("reset-button").addEventListener("click", () => resetSelection(true));
     document.getElementById("change-image-button").addEventListener("click", changeTestImage);
-    document.getElementById("verify-button").addEventListener("click", verifyAttempt);
+    verifyButton.addEventListener("click", verifyAttempt);
     document.getElementById("home-button").addEventListener("click", goHome);
 
     createCaptchaTiles();
@@ -1911,7 +2348,7 @@
     animateTrackingMonitor();
 
     /* Exposed read-only for classroom inspection and easier rule discussion. */
-    window.CAPTCHA_SIMULATOR_CONFIG = Object.freeze({ risk: RISK_CONFIG, testSets: TEST_SETS, tileCount: CAPTCHA_TILE_COUNT });
+    window.CAPTCHA_SIMULATOR_CONFIG = Object.freeze({ risk: RISK_CONFIG, dogs: DOG_CONFIG, testSets: TEST_SETS, tileCount: CAPTCHA_TILE_COUNT });
   </script>
 </body>
 </html>
