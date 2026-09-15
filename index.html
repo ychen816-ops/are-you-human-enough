@@ -262,14 +262,8 @@
 
     .win-button--primary { background: var(--pink); }
     .win-button--verify { min-width: 128px; background: #72a9ff; }
-    .win-button--bot { color: #fff; background: #171717; }
     .win-button--danger { color: #fff; background: var(--red); }
     .win-button[disabled] { opacity: .48; }
-
-    .simulation-hint {
-      margin: 10px 0 0;
-      font: 700 .7rem/1.3 "Courier New", monospace;
-    }
 
     .test-window { width: min(810px, calc(100vw - 90px)); margin: 0 auto; }
     .test-window .window-body { padding: 13px 16px 16px; background: #dedede; }
@@ -742,7 +736,6 @@
     .monitor-screen .intro-copy { margin-bottom: 8px; font-size: .92rem; line-height: 1.3; }
     .monitor-screen .system-ready { margin-bottom: 8px; padding: 7px; }
     .monitor-screen .intro-window .win-button { min-height: 40px; padding-top: 6px; padding-bottom: 6px; }
-    .monitor-screen .simulation-hint { margin-top: 6px; font-size: .65rem; }
     .monitor-screen .test-window { width: min(810px, calc(100% - 10px)); }
     .monitor-screen .captcha-board { width: min(300px, 100%); }
     .monitor-screen .analysis-window { width: min(640px, calc(100% - 20px)); }
@@ -941,6 +934,93 @@
     @media (max-width: 520px) {
       .screen-ui { width: 344.8276%; height: 344.8276%; transform: scale(.29); }
     }
+
+    /* Compact behavior windows sit over the computer's decorative lower half. */
+    .behavior-dock {
+      position: absolute;
+      z-index: 12;
+      right: max(12px, calc((100vw - 1200px) / 2 + 12px));
+      bottom: 18px;
+      width: 258px;
+      display: grid;
+      gap: 9px;
+      font-family: Arial, Helvetica, system-ui, sans-serif;
+    }
+
+    .behavior-window {
+      border: 2px solid #000;
+      background: var(--silver);
+      box-shadow: var(--win-shadow), 5px 5px 0 rgba(0,0,0,.45);
+    }
+
+    .behavior-window__bar {
+      display: flex;
+      min-height: 28px;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4px 4px 0;
+      padding: 4px 6px;
+      color: #fff;
+      background: var(--blue);
+      font: 700 14px/1 "Courier New", monospace;
+    }
+
+    .tracking-state { color: #7cff89; }
+    .tracking-state[data-state="PAUSED"] { color: #fff200; }
+    .tracking-state[data-state="RECORDED"] { color: #ff9bd4; }
+
+    .tracking-canvas-wrap {
+      margin: 4px;
+      border: 2px inset #fff;
+      background: #041108;
+    }
+
+    #tracking-canvas {
+      display: block;
+      width: 100%;
+      height: 104px;
+    }
+
+    .activity-log {
+      height: 112px;
+      margin: 4px;
+      padding: 7px 9px;
+      overflow-y: auto;
+      border: 2px inset #fff;
+      color: #14351c;
+      background: #f4f4ec;
+      font-size: 14px;
+      line-height: 1.45;
+      scrollbar-color: #777 #c6c6c6;
+    }
+
+    .activity-log p { margin: 0 0 4px; }
+    .activity-log p::before { content: "> "; color: #087a32; font-weight: 700; }
+
+    .result-summary-reasons {
+      margin: 8px 0;
+      padding: 8px 10px;
+      border: 2px inset #fff;
+      background: #fff;
+      font-family: Arial, Helvetica, system-ui, sans-serif;
+      font-size: 14px;
+    }
+
+    .result-summary-reasons h3 { margin: 0 0 5px; color: var(--blue); font-size: 14px; }
+    .result-summary-reasons ul { margin: 0; padding-left: 20px; }
+    .result-summary-reasons li { margin: 2px 0; }
+
+    .result-window .result-actions { margin-top: 8px; }
+
+    @media (max-width: 900px) {
+      .behavior-dock {
+        right: 7px;
+        bottom: 7px;
+        width: 224px;
+        transform: scale(.78);
+        transform-origin: bottom right;
+      }
+    }
   </style>
 </head>
 <body>
@@ -964,9 +1044,7 @@
             <p class="system-ready"><span class="pixel-square" aria-hidden="true"></span> HUMAN.EXE is ready.</p>
             <div class="button-row">
               <button class="win-button win-button--primary" id="start-button" type="button">START TEST</button>
-              <button class="win-button win-button--bot" id="simulate-bot-button" type="button" aria-describedby="simulation-hint">SIMULATE BOT</button>
             </div>
-            <p class="simulation-hint" id="simulation-hint">Demo mode auto-selects the correct tiles and submits them at machine speed.</p>
           </div>
         </div>
       </section>
@@ -1032,32 +1110,14 @@
               </div>
             </div>
 
-            <div class="result-explainer" aria-label="Plain-language result explanation">
-              <p><strong>1 / WHAT IT SAW</strong><span id="result-saw">Your answer and cursor traces.</span></p>
-              <p><strong>2 / HOW IT SCORED</strong><span id="result-scored">Rules added or removed risk points.</span></p>
-              <p><strong>3 / WHAT IT MEANS</strong><span id="result-means">A comparison label, not proof of identity.</span></p>
-            </div>
+            <section class="result-summary-reasons" aria-labelledby="why-title">
+              <h3 id="why-title">WHY THIS RESULT?</h3>
+              <ul id="result-reasons"></ul>
+            </section>
 
-            <div class="result-detail-grid">
-              <dl class="metrics-grid" id="metrics-grid"></dl>
-
-              <div class="result-reasoning">
-                <section class="explain-panel" aria-labelledby="why-title">
-                  <h3 id="why-title">Why did the system decide this?</h3>
-                  <ul class="score-reasons" id="score-reasons"></ul>
-                </section>
-
-                <section class="reflection" aria-labelledby="reflection-title">
-                  <p>The system does not know whether you are human. It only compares your behavior to a predefined representation of human behavior.</p>
-                  <strong id="reflection-title">What kinds of human behavior might this system misunderstand?</strong>
-                </section>
-
-                <p class="trace-note" id="trace-note"></p>
-                <div class="result-actions">
-                  <button class="win-button" id="home-button" type="button">HOME</button>
-                  <button class="win-button win-button--primary" id="try-again-button" type="button">TRY AGAIN</button>
-                </div>
-              </div>
+            <div class="result-actions">
+              <button class="win-button" id="home-button" type="button">HOME</button>
+              <button class="win-button win-button--primary" id="try-again-button" type="button">TRY AGAIN</button>
             </div>
           </div>
         </div>
@@ -1068,6 +1128,23 @@
       </div>
       <img class="computer-frame" src="assets/computer-frame.png" width="1448" height="1086" alt="" draggable="false">
     </div>
+
+    <aside class="behavior-dock" aria-label="Local interaction feedback">
+      <section class="behavior-window" aria-labelledby="tracking-title">
+        <div class="behavior-window__bar">
+          <span id="tracking-title">MOUSE TRACKING</span>
+          <span class="tracking-state" id="tracking-state" data-state="PAUSED">PAUSED</span>
+        </div>
+        <div class="tracking-canvas-wrap">
+          <canvas id="tracking-canvas" aria-label="A miniature view of this page showing your current mouse path"></canvas>
+        </div>
+      </section>
+
+      <section class="behavior-window" aria-labelledby="activity-title">
+        <div class="behavior-window__bar"><span id="activity-title">ACTIVITY LOG</span></div>
+        <div class="activity-log" id="activity-log" role="log" aria-live="polite"></div>
+      </section>
+    </aside>
   </div>
 
   <div class="pixel-cursor" id="pixel-cursor" aria-hidden="true">
@@ -1131,11 +1208,6 @@
       },
       analysis: {
         stepDelayMs: 460
-      },
-      simulation: {
-        firstSelectionDelayMs: 80,
-        betweenSelectionsMs: 110,
-        beforeVerifyMs: 140
       }
     });
 
@@ -1176,6 +1248,13 @@
     ]);
 
     const CAPTCHA_TILE_COUNT = 9;
+    const BEHAVIOR_UI_CONFIG = Object.freeze({
+      pauseAfterMs: 2000,
+      traceSampleMs: 24,
+      maximumTracePoints: 1800,
+      maximumClickMarks: 80,
+      maximumLogEntries: 60
+    });
 
     const HISTORY_KEY = "humanEnough.attemptHistory.v4";
     const screens = [...document.querySelectorAll(".screen")];
@@ -1186,9 +1265,15 @@
     const selectedTiles = new Set();
     let currentTestIndex = 0;
     let pendingResult = null;
-    let isSimulating = false;
     let metrics = freshMetrics();
     let history = loadHistory();
+    const trackingCanvas = document.getElementById("tracking-canvas");
+    const trackingContext = trackingCanvas.getContext("2d");
+    const trackingStateLabel = document.getElementById("tracking-state");
+    const activityLog = document.getElementById("activity-log");
+    let pauseLogTimer = 0;
+    let traceAnimationFrame = 0;
+    let behaviorUI = freshBehaviorUI();
 
     function freshMetrics() {
       return {
@@ -1205,9 +1290,182 @@
         lastSampleAt: 0,
         speeds: [],
         imageClicks: 0,
-        corrections: 0,
-        simulated: false
+        corrections: 0
       };
+    }
+
+    function freshBehaviorUI() {
+      return {
+        active: false,
+        frozen: false,
+        disconnected: true,
+        paused: false,
+        lastTraceSampleAt: 0,
+        points: [],
+        clicks: []
+      };
+    }
+
+    function setTrackingState(state) {
+      trackingStateLabel.textContent = state;
+      trackingStateLabel.dataset.state = state;
+    }
+
+    function writeActivity(message) {
+      if (!message || activityLog.lastElementChild?.textContent === message) return;
+      const entry = document.createElement("p");
+      entry.textContent = message;
+      activityLog.appendChild(entry);
+      while (activityLog.children.length > BEHAVIOR_UI_CONFIG.maximumLogEntries) activityLog.firstElementChild.remove();
+      activityLog.scrollTop = activityLog.scrollHeight;
+    }
+
+    function schedulePauseLog() {
+      window.clearTimeout(pauseLogTimer);
+      if (!behaviorUI.active) return;
+      pauseLogTimer = window.setTimeout(() => {
+        if (!behaviorUI.active || behaviorUI.paused) return;
+        behaviorUI.paused = true;
+        setTrackingState("PAUSED");
+        writeActivity("Cursor paused.");
+      }, BEHAVIOR_UI_CONFIG.pauseAfterMs);
+    }
+
+    function resetBehaviorUI(activate = false) {
+      window.clearTimeout(pauseLogTimer);
+      behaviorUI = freshBehaviorUI();
+      behaviorUI.active = activate;
+      activityLog.replaceChildren();
+      setTrackingState(activate ? "LIVE" : "PAUSED");
+      if (activate) {
+        writeActivity("Test started.");
+        schedulePauseLog();
+      }
+      drawTrackingMonitor();
+    }
+
+    function pauseBehaviorUI() {
+      window.clearTimeout(pauseLogTimer);
+      behaviorUI.active = false;
+      behaviorUI.disconnected = true;
+      setTrackingState("PAUSED");
+    }
+
+    function freezeBehaviorUI() {
+      window.clearTimeout(pauseLogTimer);
+      behaviorUI.active = false;
+      behaviorUI.frozen = true;
+      behaviorUI.disconnected = true;
+      setTrackingState("RECORDED");
+      drawTrackingMonitor();
+    }
+
+    function recordTracePoint(event) {
+      if (!behaviorUI.active) return;
+      const now = performance.now();
+      if (now - behaviorUI.lastTraceSampleAt < BEHAVIOR_UI_CONFIG.traceSampleMs) return;
+      const resumed = behaviorUI.paused;
+      behaviorUI.points.push({
+        x: Math.max(0, Math.min(1, event.clientX / Math.max(1, window.innerWidth))),
+        y: Math.max(0, Math.min(1, event.clientY / Math.max(1, window.innerHeight))),
+        start: behaviorUI.disconnected,
+        time: now
+      });
+      if (behaviorUI.points.length > BEHAVIOR_UI_CONFIG.maximumTracePoints) behaviorUI.points.shift();
+      behaviorUI.lastTraceSampleAt = now;
+      behaviorUI.disconnected = false;
+      behaviorUI.paused = false;
+      setTrackingState("LIVE");
+      if (resumed) writeActivity("Cursor moving again.");
+      schedulePauseLog();
+    }
+
+    function recordTraceClick(event) {
+      if (!behaviorUI.active || event.button !== 0) return;
+      behaviorUI.clicks.push({
+        x: Math.max(0, Math.min(1, event.clientX / Math.max(1, window.innerWidth))),
+        y: Math.max(0, Math.min(1, event.clientY / Math.max(1, window.innerHeight))),
+        time: performance.now()
+      });
+      if (behaviorUI.clicks.length > BEHAVIOR_UI_CONFIG.maximumClickMarks) behaviorUI.clicks.shift();
+    }
+
+    function disconnectTrace() {
+      if (!behaviorUI.active) return;
+      behaviorUI.disconnected = true;
+      setTrackingState("PAUSED");
+    }
+
+    function resizeTrackingCanvas() {
+      const bounds = trackingCanvas.getBoundingClientRect();
+      const scale = Math.min(2, window.devicePixelRatio || 1);
+      const width = Math.max(1, Math.round(bounds.width * scale));
+      const height = Math.max(1, Math.round(bounds.height * scale));
+      if (trackingCanvas.width !== width || trackingCanvas.height !== height) {
+        trackingCanvas.width = width;
+        trackingCanvas.height = height;
+      }
+      trackingContext.setTransform(scale, 0, 0, scale, 0, 0);
+      return { width: bounds.width, height: bounds.height };
+    }
+
+    function drawTrackingMonitor() {
+      const { width, height } = resizeTrackingCanvas();
+      trackingContext.clearRect(0, 0, width, height);
+      trackingContext.fillStyle = "#041108";
+      trackingContext.fillRect(0, 0, width, height);
+      trackingContext.lineWidth = 1;
+      trackingContext.strokeStyle = "rgba(90, 255, 120, .15)";
+      for (let column = 1; column < 6; column += 1) {
+        trackingContext.beginPath();
+        trackingContext.moveTo((width / 6) * column, 0);
+        trackingContext.lineTo((width / 6) * column, height);
+        trackingContext.stroke();
+      }
+      for (let row = 1; row < 4; row += 1) {
+        trackingContext.beginPath();
+        trackingContext.moveTo(0, (height / 4) * row);
+        trackingContext.lineTo(width, (height / 4) * row);
+        trackingContext.stroke();
+      }
+
+      const points = behaviorUI.points;
+      trackingContext.lineWidth = 2;
+      trackingContext.lineCap = "square";
+      for (let index = 1; index < points.length; index += 1) {
+        if (points[index].start) continue;
+        const opacity = .18 + (.72 * index / points.length);
+        trackingContext.strokeStyle = `rgba(87, 255, 119, ${opacity})`;
+        trackingContext.beginPath();
+        trackingContext.moveTo(points[index - 1].x * width, points[index - 1].y * height);
+        trackingContext.lineTo(points[index].x * width, points[index].y * height);
+        trackingContext.stroke();
+      }
+
+      behaviorUI.clicks.forEach(click => {
+        const age = performance.now() - click.time;
+        const opacity = behaviorUI.frozen ? .8 : Math.max(0, 1 - age / 1200);
+        if (!opacity) return;
+        trackingContext.strokeStyle = `rgba(255, 242, 0, ${opacity})`;
+        trackingContext.lineWidth = 2;
+        trackingContext.beginPath();
+        trackingContext.arc(click.x * width, click.y * height, 6, 0, Math.PI * 2);
+        trackingContext.stroke();
+      });
+
+      const lastPoint = points.at(-1);
+      if (lastPoint && !behaviorUI.disconnected) {
+        trackingContext.fillStyle = "#8dff99";
+        trackingContext.shadowColor = "#42ff67";
+        trackingContext.shadowBlur = 8;
+        trackingContext.fillRect(lastPoint.x * width - 3, lastPoint.y * height - 3, 6, 6);
+        trackingContext.shadowBlur = 0;
+      }
+    }
+
+    function animateTrackingMonitor() {
+      drawTrackingMonitor();
+      traceAnimationFrame = requestAnimationFrame(animateTrackingMonitor);
     }
 
     function showScreen(id, focusSelector) {
@@ -1255,12 +1513,13 @@
       metrics = freshMetrics();
       metrics.active = true;
       metrics.startedAt = performance.now();
+      resetBehaviorUI(true);
       announcer.textContent = `${currentTest().label} loaded. Selection and behavior timer restarted.`;
       document.querySelector(".captcha-tile")?.focus();
     }
 
-    function toggleTile(button, index, automated = false) {
-      if (!metrics.active || (isSimulating && !automated)) return;
+    function toggleTile(button, index) {
+      if (!metrics.active) return;
       const wasSelected = selectedTiles.has(index);
       metrics.imageClicks += 1;
       if (metrics.firstImageClickAt === null) metrics.firstImageClickAt = performance.now();
@@ -1278,6 +1537,7 @@
       button.setAttribute("aria-pressed", String(isSelected));
       button.setAttribute("aria-label", `Tile ${index + 1}, row ${row}, column ${column}. ${isSelected ? "Selected" : "Not selected"}.`);
       selectionCount.textContent = `${selectedTiles.size} SELECTED`;
+      writeActivity(`Image ${index + 1} ${isSelected ? "selected" : "deselected"}.`);
       announcer.textContent = `Tile ${index + 1} ${isSelected ? "selected" : "deselected"}. ${selectedTiles.size} selected.`;
     }
 
@@ -1290,11 +1550,14 @@
         button.setAttribute("aria-label", `Tile ${index + 1}, row ${row}, column ${column}. Not selected.`);
       });
       selectionCount.textContent = "0 SELECTED";
-      if (announce) announcer.textContent = "Selection cleared.";
+      if (announce) {
+        writeActivity("Selection cleared.");
+        announcer.textContent = "Selection cleared.";
+      }
     }
 
     function setTestControlsDisabled(disabled) {
-      ["reset-button", "change-image-button", "verify-button", "simulate-bot-button"].forEach(id => {
+      ["reset-button", "change-image-button", "verify-button"].forEach(id => {
         document.getElementById(id).disabled = disabled;
       });
       [...grid.children].forEach(button => { button.disabled = disabled; });
@@ -1302,48 +1565,20 @@
     }
 
     function startAttempt() {
-      isSimulating = false;
       resetSelection(false);
       metrics = freshMetrics();
       metrics.active = true;
       metrics.startedAt = performance.now();
       pendingResult = null;
-      document.body.classList.remove("is-analyzing", "is-simulating");
+      document.body.classList.remove("is-analyzing");
       setTestControlsDisabled(false);
+      resetBehaviorUI(true);
       document.getElementById("system-status").textContent = "TRACKING ACTIVE";
       showScreen("test-screen", ".captcha-tile");
     }
 
-    async function simulateBotAttempt() {
-      if (isSimulating) return;
-      startAttempt();
-      isSimulating = true;
-      metrics.simulated = true;
-      setTestControlsDisabled(true);
-      document.body.classList.add("is-simulating");
-      document.getElementById("system-status").textContent = "BOT DEMO: AUTO-SELECTING";
-      announcer.textContent = "Bot simulation started. Correct tiles will be selected automatically.";
-
-      await wait(RISK_CONFIG.simulation.firstSelectionDelayMs);
-      for (const [position, index] of currentTest().correctTiles.entries()) {
-        const button = grid.children[index];
-        button.classList.add("is-auto-clicking");
-        toggleTile(button, index, true);
-        document.getElementById("system-status").textContent = `BOT DEMO: CLICK ${position + 1}/${currentTest().correctTiles.length}`;
-        await wait(RISK_CONFIG.simulation.betweenSelectionsMs);
-        button.classList.remove("is-auto-clicking");
-      }
-
-      document.getElementById("system-status").textContent = "BOT DEMO: AUTO-VERIFY";
-      announcer.textContent = "All correct tiles selected. Submitting automatically.";
-      await wait(RISK_CONFIG.simulation.beforeVerifyMs);
-      document.body.classList.remove("is-simulating");
-      isSimulating = false;
-      await verifyAttempt();
-    }
-
     function sampleMouse(event) {
-      if (!metrics.active || metrics.simulated) return;
+      if (!metrics.active) return;
       const now = performance.now();
       if (now - metrics.lastSampleAt < RISK_CONFIG.movement.sampleIntervalMs) return;
 
@@ -1468,7 +1703,6 @@
         movementCount: metrics.movementCount,
         totalDistance: metrics.totalDistance,
         corrections: metrics.corrections,
-        simulated: metrics.simulated,
         correctTileDecisions,
         testId: currentTest().id
       };
@@ -1478,6 +1712,8 @@
       if (!metrics.active) return;
       metrics.verifiedAt = performance.now();
       metrics.active = false;
+      writeActivity("Answers submitted.");
+      freezeBehaviorUI();
       pendingResult = calculateResult();
       setTestControlsDisabled(true);
       document.body.classList.add("is-analyzing");
@@ -1540,41 +1776,21 @@
       avatarViewport.setAttribute("aria-label", avatar.description);
       document.getElementById("avatar-label").textContent = avatar.label;
 
-      const positivePoints = result.reasons.filter(reason => reason.delta > 0 && reason.label !== "Base risk").reduce((sum, reason) => sum + reason.delta, 0);
-      const negativePoints = Math.abs(result.reasons.filter(reason => reason.delta < 0).reduce((sum, reason) => sum + reason.delta, 0));
-      const meaningByLevel = {
-        low: "A correct answer at a plausible pace fits this model's human-like range.",
-        uncertain: result.exactCorrect
-          ? "The answer was correct, but the behavioral traces were mixed."
-          : "An imperfect answer indicates task failure, not proof of automation.",
-        high: "A perfect answer submitted at machine-like speed triggered the bot-like pattern."
-      };
-      const runDescription = result.simulated ? "BOT DEMO auto-selected the answer." : "The attempt was completed manually.";
-      document.getElementById("result-saw").textContent = `${runDescription} ${result.correctTileDecisions} of 9 tile decisions matched; completion took ${result.completionSeconds.toFixed(2)} s.`;
-      document.getElementById("result-scored").textContent = `Starting from ${RISK_CONFIG.baseRisk}, triggered rules added ${positivePoints} points and removed ${negativePoints} points; imperfect answers cannot exceed ${RISK_CONFIG.answer.imperfectScoreCap}.`;
-      document.getElementById("result-means").textContent = meaningByLevel[result.level];
+      const triggered = result.reasons.map(reason => reason.label);
+      const summaries = [];
+      const hasRule = text => triggered.some(label => label.includes(text));
+      if (hasRule("Perfect answer at machine-like speed")) summaries.push("Perfect answer at machine-like speed");
+      if (hasRule("incorrect selection") || hasRule("missed target tile")) summaries.push("Some answers were incorrect");
+      if (hasRule("Unusually fast response") || hasRule("Fast response")) summaries.push("Fast completion");
+      if (hasRule("Long completion time")) summaries.push("Slow completion");
+      if (hasRule("Very limited cursor movement")) summaries.push("Very little cursor movement");
+      if (hasRule("Natural speed variation")) summaries.push("Natural cursor variation");
+      if (hasRule("selection correction")) summaries.push("Selection corrections detected");
+      if (hasRule("Correct answer")) summaries.push("All image choices were correct");
 
-      const metricRows = [
-        ["Completion Time", `${result.completionSeconds.toFixed(2)} s`],
-        ["Answer Accuracy", `${result.accuracy.toFixed(0)}%`],
-        ["Mouse Distance", `${Math.round(result.totalDistance)} px`],
-        ["Selection Corrections", String(result.corrections)],
-        ["Incorrect Selections", String(result.incorrectSelections)],
-        ["Missed Tiles", String(result.missedCorrectTiles)],
-        ["Image Clicks", String(result.imageClicks)],
-        ["Movement Samples", String(result.movementCount)]
-      ];
-      document.getElementById("metrics-grid").innerHTML = metricRows.map(([label, value]) => `<div class="metric"><dt>${label}</dt><dd>${value}</dd></div>`).join("");
-
-      document.getElementById("score-reasons").innerHTML = result.reasons.map(reason => {
-        const sign = reason.delta > 0 ? "+" : reason.delta < 0 ? "−" : "";
-        const value = Math.abs(reason.delta);
-        const className = reason.delta < 0 ? "is-negative" : reason.delta > 0 ? "is-positive" : "";
-        return `<li><span>${reason.label}</span><span class="reason-delta ${className}">${sign}${value}</span></li>`;
-      }).join("");
-
-      const firstClickText = result.firstClickSeconds === null ? "no tile selected" : `${result.firstClickSeconds.toFixed(2)}s to first selection`;
-      document.getElementById("trace-note").textContent = `TRACE DETAIL: ${firstClickText} · average speed ${Math.round(result.averageSpeed)} px/s · path straightness ${result.straightness.toFixed(2)} · speed variation ${result.speedVariation.toFixed(2)}`;
+      const uniqueSummaries = [...new Set(summaries)].slice(0, 2);
+      if (!uniqueSummaries.length) uniqueSummaries.push("No additional scoring rule was triggered");
+      document.getElementById("result-reasons").innerHTML = uniqueSummaries.map(reason => `<li>${reason}</li>`).join("");
     }
 
     function loadHistory() {
@@ -1621,11 +1837,11 @@
 
     function goHome() {
       metrics.active = false;
-      isSimulating = false;
       pendingResult = null;
       resetSelection(false);
-      document.body.classList.remove("is-analyzing", "is-simulating");
+      document.body.classList.remove("is-analyzing");
       setTestControlsDisabled(false);
+      pauseBehaviorUI();
       document.getElementById("system-status").textContent = "SYSTEM READY";
       showScreen("intro-screen", "#start-button");
       announcer.textContent = "Returned to the home screen.";
@@ -1640,6 +1856,7 @@
         x = event.clientX;
         y = event.clientY;
         sampleMouse(event);
+        recordTracePoint(event);
         if (!frame) frame = requestAnimationFrame(() => {
           cursor.style.transform = `translate3d(${x}px, ${y}px, 0)`;
           frame = 0;
@@ -1647,6 +1864,7 @@
       }, { passive: true });
 
       document.addEventListener("mousedown", event => {
+        recordTraceClick(event);
         if (prefersReducedMotion.matches || event.button !== 0) return;
         const offsets = [[-24,-20],[24,-18],[-22,24],[24,24],[0,30]];
         offsets.forEach(([dx, dy], index) => {
@@ -1661,10 +1879,24 @@
           window.setTimeout(() => spark.remove(), 380);
         });
       });
+
+      document.documentElement.addEventListener("mouseleave", disconnectTrace);
+      window.addEventListener("blur", disconnectTrace);
+      window.addEventListener("resize", drawTrackingMonitor, { passive: true });
+      document.addEventListener("visibilitychange", () => {
+        if (!metrics.active) return;
+        if (document.hidden) {
+          disconnectTrace();
+          writeActivity("Page hidden.");
+        } else {
+          behaviorUI.disconnected = true;
+          writeActivity("Page visible.");
+          setTrackingState("PAUSED");
+        }
+      });
     }
 
     document.getElementById("start-button").addEventListener("click", startAttempt);
-    document.getElementById("simulate-bot-button").addEventListener("click", simulateBotAttempt);
     document.getElementById("try-again-button").addEventListener("click", startAttempt);
     document.getElementById("reset-button").addEventListener("click", () => resetSelection(true));
     document.getElementById("change-image-button").addEventListener("click", changeTestImage);
@@ -1674,7 +1906,9 @@
     createCaptchaTiles();
     applyCurrentTestSet();
     renderHistory();
+    resetBehaviorUI(false);
     initCustomCursor();
+    animateTrackingMonitor();
 
     /* Exposed read-only for classroom inspection and easier rule discussion. */
     window.CAPTCHA_SIMULATOR_CONFIG = Object.freeze({ risk: RISK_CONFIG, testSets: TEST_SETS, tileCount: CAPTCHA_TILE_COUNT });
