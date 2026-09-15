@@ -1026,7 +1026,7 @@
     @media (min-width: 1101px) {
       .desktop {
         grid-template-columns: minmax(720px, 980px) 350px;
-        gap: 24px;
+        gap: 10px;
         justify-content: center;
         align-items: center;
         padding: 14px 24px;
@@ -1045,7 +1045,7 @@
         width: 350px;
         gap: 14px;
         align-self: center;
-        transform: none;
+        transform: translateX(-90px);
       }
 
       #tracking-canvas { height: 230px; }
@@ -1069,9 +1069,31 @@
     }
 
     .monitor-screen .screen { padding-right: 28px; padding-left: 28px; }
-    .monitor-screen #test-screen { padding-right: 24px; padding-left: 24px; }
+    .monitor-screen #test-screen { padding: 32px 24px 6px; }
+    .monitor-screen #analysis-screen { padding: 28px 24px 8px; }
     .monitor-screen #result-screen { padding: 44px 17px 8px; }
     .monitor-screen .result-window { width: min(720px, calc(100% - 18px)); }
+    .monitor-screen .captcha-board { width: min(280px, 100%); }
+    .monitor-screen .captcha-workspace { position: relative; }
+    .monitor-screen .captcha-copy-column { min-height: 280px; padding-bottom: 78px; }
+    .monitor-screen .captcha-note { margin-top: 10px; }
+    .monitor-screen .captcha-actions,
+    .monitor-screen .test-switcher {
+      position: absolute;
+      left: 0;
+      width: calc(100% - 296px);
+      margin: 0;
+    }
+    .monitor-screen .captcha-actions { bottom: 39px; }
+    .monitor-screen .test-switcher { bottom: 0; gap: 6px; padding: 6px; }
+    .monitor-screen .captcha-actions .win-button { min-width: 0; padding: 6px 10px; }
+    .monitor-screen .captcha-actions .win-button--verify { flex: 1; }
+    .monitor-screen .test-set-label { min-width: 78px; }
+    .monitor-screen .analysis-window { width: min(610px, calc(100% - 18px)); margin: 0 auto; }
+    .monitor-screen .analysis-window .window-body { padding: 18px 22px; }
+    .monitor-screen .analysis-heading { margin-bottom: 6px; font-size: 1.55rem; }
+    .monitor-screen .analysis-copy { margin-bottom: 12px; }
+    .monitor-screen .analysis-log { min-height: 118px; margin-top: 12px; padding: 10px 12px; }
 
     .win-button--bot { color: #7cff89; background: #111; }
 
@@ -1117,11 +1139,22 @@
       transition: opacity .18s steps(2, end), transform .26s steps(3, end);
     }
 
+    .dog-meme[data-position="top"] {
+      top: 0;
+      bottom: auto;
+      left: 0;
+      width: min(255px, calc(100vw - 24px));
+      transform: translateY(-76%) scale(.92);
+      transform-origin: top center;
+    }
+
     .dog-meme.is-visible {
       opacity: 1;
       pointer-events: auto;
       transform: translateY(0) scale(1);
     }
+
+    .dog-meme[data-position="top"].is-visible { transform: translateY(0) scale(1); }
 
     .dog-meme__image {
       display: block;
@@ -1143,11 +1176,12 @@
       left: 54%;
       min-width: 205px;
       max-width: 275px;
-      padding: 10px 12px;
+      padding: 12px 15px;
       border: 3px solid #000;
       color: #000;
-      background: #fff;
-      box-shadow: 5px 5px 0 var(--pink);
+      background: #fffef0;
+      box-shadow: 0 0 0 3px #72a9ff, 7px 7px 0 #000;
+      clip-path: polygon(8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, 100% 4px, 100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) 100%, 8px 100%, 8px calc(100% - 4px), 0 calc(100% - 4px), 0 8px, 4px 8px, 4px 4px, 8px 4px);
       font: 700 15px/1.25 Arial, Helvetica, system-ui, sans-serif;
     }
 
@@ -1158,11 +1192,25 @@
       width: 18px;
       height: 18px;
       content: "";
-      border-right: 3px solid #000;
-      border-bottom: 3px solid #000;
-      background: #fff;
-      transform: skewY(35deg) rotate(35deg);
+      border: 3px solid #000;
+      border-top: 0;
+      border-left: 0;
+      background: #fffef0;
+      transform: rotate(45deg);
     }
+
+    .dog-meme[data-position="top"] .dog-bubble {
+      top: 18px;
+      left: 92%;
+    }
+
+    .dog-meme[data-position="top"] .dog-bubble::after {
+      top: -11px;
+      bottom: auto;
+      transform: rotate(225deg);
+    }
+
+    .dog-meme[data-position="top"] .dog-meme__close { top: 10px; right: -80px; }
 
     .dog-meme__close {
       position: absolute;
@@ -1185,7 +1233,7 @@
 
     @media (max-width: 1100px) {
       .desktop { min-height: 100dvh; overflow: auto; }
-      .dog-meme { left: 12px; }
+      .dog-meme:not([data-position="top"]) { left: 12px; }
       .result-data-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .monitor-screen { top: 7.55%; left: 23.35%; width: 49.5%; height: 49.1%; }
       .screen-ui { width: 133.3334%; height: 133.3334%; transform: scale(.75); }
@@ -1195,7 +1243,7 @@
     @media (min-width: 950px) and (max-width: 1100px) {
       .desktop {
         grid-template-columns: minmax(620px, 700px) 265px;
-        gap: 8px;
+        gap: 4px;
         justify-content: center;
         align-items: center;
         padding: 8px;
@@ -1214,7 +1262,7 @@
         width: 265px;
         gap: 10px;
         align-self: center;
-        transform: none;
+        transform: translateX(-64px);
       }
 
       #tracking-canvas { height: 170px; }
@@ -1242,8 +1290,7 @@
     <div class="computer-shell" aria-label="Interactive simulator displayed inside a retro computer">
       <div class="monitor-screen">
         <div class="screen-ui">
-    <div class="status-corner status-corner--left"><span class="status-light" aria-hidden="true"></span><span id="system-status">SYSTEM READY</span></div>
-    <div class="status-corner status-corner--right">ONLINE / LOCAL</div>
+    <span class="sr-only" id="system-status" aria-live="polite">SYSTEM READY</span>
 
     <main id="main">
       <section class="screen is-active" id="intro-screen" aria-labelledby="page-title">
@@ -1449,12 +1496,12 @@
       correctionCycles: 3,
       verifyHoverMs: 3000,
       dogs: Object.freeze({
-        golden: Object.freeze({ image: "../assets/dog-golden.png", alt: "A blankly staring golden retriever", caption: "bro?" }),
-        chihuahua: Object.freeze({ image: "../assets/dog-chihuahua.png", alt: "A shocked Chihuahua", caption: "clicking harder won’t help." }),
-        dachshund: Object.freeze({ image: "../assets/dog-dachshund.png", alt: "A confused dachshund tilting its head", caption: "final answer? …final final?" }),
-        shiba: Object.freeze({ image: "../assets/dog-shiba.png", alt: "A suspicious Shiba Inu", caption: "it’s just a button." }),
-        husky: Object.freeze({ image: "../assets/dog-husky.png", alt: "An irritated husky", caption: "welcome back, suspicious citizen." }),
-        pomeranian: Object.freeze({ image: "../assets/dog-pomeranian.png", alt: "A smug Pomeranian wearing sunglasses", caption: "correct answers. suspicious vibes." })
+        golden: Object.freeze({ image: "../assets/dog-golden.png", alt: "A blankly staring golden retriever", caption: "bro?", position: "top" }),
+        chihuahua: Object.freeze({ image: "../assets/dog-chihuahua.png", alt: "A shocked Chihuahua", caption: "clicking harder won’t help.", position: "bottom" }),
+        dachshund: Object.freeze({ image: "../assets/dog-dachshund.png", alt: "A confused dachshund tilting its head", caption: "final answer? …final final?", position: "top" }),
+        shiba: Object.freeze({ image: "../assets/dog-shiba.png", alt: "A suspicious Shiba Inu", caption: "it’s just a button.", position: "top" }),
+        husky: Object.freeze({ image: "../assets/dog-husky.png", alt: "An irritated husky", caption: "welcome back, suspicious citizen.", position: "bottom" }),
+        pomeranian: Object.freeze({ image: "../assets/dog-pomeranian.png", alt: "A smug Pomeranian wearing sunglasses", caption: "correct answers. suspicious vibes.", position: "bottom" })
       })
     });
 
@@ -1600,6 +1647,7 @@
         lastShownAt = now;
         nudgeUsed = false;
         popup.dataset.kind = kind;
+        popup.dataset.position = options.position || dog.position;
         image.src = dog.image;
         image.alt = dog.alt;
         caption.textContent = dog.caption;
