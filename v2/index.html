@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Are You Human Enough — v2</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --ink: #1d1d1f;
+    --muted: #86868b;
+    --accent: #0a84ff;
+    --accent-hi: #64d2ff;
+    --glass-bg: rgba(255, 255, 255, 0.32);
+    --glass-border: rgba(255, 255, 255, 0.55);
+    --glass-shadow: 0 10px 34px rgba(99, 102, 241, 0.16), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* ---------- drifting glass backdrop ---------- */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: -1;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(58px);
+    opacity: 0.4;
+    will-change: transform;
+  }
+  .blob-a {
+    width: 50vmax; height: 50vmax; left: -14%; top: -18%;
+    background: radial-gradient(circle at 30% 30%, #a78bfa, transparent 70%);
+    animation: drift-a 24s ease-in-out infinite alternate;
+  }
+  .blob-b {
+    width: 44vmax; height: 44vmax; right: -18%; top: 4%;
+    background: radial-gradient(circle at 60% 40%, #7dd3fc, transparent 70%);
+    animation: drift-b 19s ease-in-out infinite alternate;
+  }
+  .blob-c {
+    width: 48vmax; height: 48vmax; left: 16%; bottom: -24%;
+    background: radial-gradient(circle at 50% 50%, #f0abfc, transparent 70%);
+    animation: drift-c 27s ease-in-out infinite alternate;
+  }
+  @keyframes drift-a { from { transform: translate(0,0) scale(1); } to { transform: translate(16%, 18%) scale(1.18); } }
+  @keyframes drift-b { from { transform: translate(0,0) scale(1); } to { transform: translate(-18%, 14%) scale(0.88); } }
+  @keyframes drift-c { from { transform: translate(0,0) scale(1); } to { transform: translate(14%, -16%) scale(1.14); } }
+
+  /* ---------- glass surface ---------- */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass { background: rgba(255, 255, 255, 0.85); }
+  }
+
+  .stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .headline {
+    margin: 0;
+    font-size: clamp(26px, 4.6vw, 42px);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    max-width: 560px;
+  }
+
+  .ring {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50%;
+    width: 200px;
+    height: 200px;
+    padding: 0;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ring:focus-visible { outline: 2px solid var(--accent); outline-offset: 8px; }
+  .ring::before {
+    content: "";
+    position: absolute;
+    left: -20%; top: -30%;
+    width: 140%; height: 140%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.65), transparent 70%);
+    animation: sheen-move 27s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes sheen-move {
+    from { transform: translate(-6%, -8%); }
+    to { transform: translate(9%, 11%); }
+  }
+  .ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); position: relative; z-index: 1; }
+  .ring-track { fill: none; stroke: rgba(29, 29, 31, 0.12); stroke-width: 2.5; }
+  .ring-progress { fill: none; stroke: url(#accentGradient); stroke-width: 2.5; stroke-linecap: round; }
+  .ring-disc { fill: url(#discGradient); opacity: 0; transition: opacity 260ms ease; }
+  .ring-check {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 280ms ease 160ms;
+    filter: drop-shadow(0 1px 2px rgba(10, 82, 160, 0.4));
+  }
+  .ring[data-state="human"] .ring-disc { opacity: 1; }
+  .ring[data-state="human"] .ring-check { stroke-dashoffset: 0; }
+  .ring.is-receding .ring-progress { transition: stroke-dashoffset 240ms ease; }
+
+  .result-panel {
+    border-radius: 20px;
+    padding: 14px 26px;
+    max-width: 320px;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 260ms ease;
+    pointer-events: none;
+  }
+  .result-panel.is-visible { opacity: 1; }
+  .result { margin: 0; font-size: 18px; color: var(--ink); }
+
+  .simulate {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(84px, calc(64px + env(safe-area-inset-bottom)));
+    border-radius: 999px;
+    padding: 8px 16px;
+    font: 500 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
+    color: var(--muted);
+    cursor: pointer;
+    opacity: 0.75;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.10);
+    z-index: 5;
+  }
+  .simulate:hover { opacity: 0.95; }
+  .simulate:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .simulate:disabled { opacity: 0.45; cursor: default; }
+
+  .fineprint {
+    margin: 0;
+    padding: 18px 24px 26px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob, .ring::before { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="blob blob-c"></div>
+  </div>
+
+  <main class="stage">
+    <p class="headline">Press the button.</p>
+
+    <button class="ring glass" id="ring" type="button" data-state="idle" aria-label="Press and hold">
+      <svg class="ring-svg" viewBox="0 0 200 200" aria-hidden="true">
+        <defs>
+          <linearGradient id="accentGradient" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#0a84ff"></stop>
+            <stop offset="1" stop-color="#64d2ff"></stop>
+          </linearGradient>
+          <radialGradient id="discGradient" cx="35%" cy="30%" r="75%">
+            <stop offset="0" stop-color="#64d2ff"></stop>
+            <stop offset="55%" stop-color="#0a84ff"></stop>
+            <stop offset="100%" stop-color="#0a84ff"></stop>
+          </radialGradient>
+        </defs>
+        <circle class="ring-track" cx="100" cy="100" r="88"></circle>
+        <circle class="ring-disc" cx="100" cy="100" r="84"></circle>
+        <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="88"
+                stroke-dasharray="552.92" stroke-dashoffset="552.92"></circle>
+        <path class="ring-check" pathLength="1" transform="rotate(90 100 100)" d="M70 104 L93 127 L136 76"></path>
+      </svg>
+    </button>
+
+    <div class="result-panel glass" id="resultPanel">
+      <p class="result" id="result" aria-live="polite"></p>
+    </div>
+  </main>
+
+  <button class="simulate glass" id="simulateBtn" type="button">Simulate</button>
+
+  <p class="fineprint">
+    This does not confirm who you are. It compares your behavior with a preset model of human behavior.
+  </p>
+
+<script>
+"use strict";
+
+/* ==========================================================================
+   SIGNAL MAPPING — Version 1 → Version 2
+   Ported from are-you-human-enough/index.html (RISK_CONFIG + ScoreEngine).
+   Same architecture is reused: a base risk value, a set of additive/
+   subtractive rule deltas, the same movement-naturalness formulas
+   (straightness, coefficient-of-variation "jitter" check), the same
+   combo-bonus concept for machine-precise behavior, the same "hesitation
+   lowers risk" treatment of retries, and the identical 0–100 range with
+   30/60 classification cutoffs.
+
+   V1 signal                                    -> V2 signal (hold gesture)
+   completionSeconds (task start -> verify)      -> holdDurationMs, read
+                                                     relative to the ring's
+                                                     own (randomized) target
+                                                     fill time
+   firstClickSeconds (test start -> 1st click)   -> engageDelayMs (page
+                                                     ready -> first press),
+                                                     captured once, like
+                                                     V1's firstImageClickAt
+   totalDistance / speeds[] sampled every 50ms   -> identical sampling,
+                                                     applied to pointer
+                                                     movement during the hold
+                                                     instead of movement
+                                                     across the whole task
+   straightness (direct / total distance)        -> unchanged formula
+   speed variation / CV ("natural variation")    -> unchanged formula
+   corrections (reselecting a tile, -5 each)     -> retries (releasing
+                                                     before the ring
+                                                     finishes, then trying
+                                                     again), same -5 each,
+                                                     same -10 cap
+   exactCorrect && ultraFast combo (+40)         -> precise release with
+                                                     zero motion (+40)
+   exactCorrect / incorrectSelections /          -> DROPPED. V1's grid task
+   missedCorrectTiles / imperfectScoreCap           had a right-or-wrong
+                                                     answer; a press-and-hold
+                                                     gesture does not. This
+                                                     is the one axis that has
+                                                     no equivalent here.
+
+   The engine still computes three tiers (low / uncertain / high), exactly
+   like V1 — the interface only ever admits two feelings. The Simulate
+   button (bottom right) does not take a separate code path: it builds one
+   fixed "unnatural" metrics object and calls the same evaluate() and
+   render() functions used by a real gesture, purely so the uncertain/high
+   outcome can be reproduced on demand for testing or a classroom demo.
+   ========================================================================== */
+
+const RISK_CONFIG = Object.freeze({
+  baseRisk: 10,
+  engageDelay: { suspiciousUnderMs: 100, suspiciousPoints: 12 },
+  release: {
+    preciseUnderMs: 15, precisePoints: 20,
+    quickUnderMs: 90, quickPoints: 6,
+    slowOverMs: 2500, slowPoints: 8
+  },
+  movement: {
+    // For a sub-second hold, near-zero cursor drift is the *normal* human
+    // case (unlike V1's full-screen tile-selection task, where movement
+    // was inherent to completing the task). "No movement" is therefore no
+    // longer scored on its own — it only counts as evidence inside the
+    // automationPattern combo below, paired with suspiciously precise
+    // release timing. Scoring it alone was pushing almost every genuine
+    // hold to the edge of the "uncertain" band.
+    sampleIntervalMs: 50,
+    zeroMotionUnderPx: 2,
+    straightnessOver: 0.92, minimumDistanceForStraightnessPx: 6, straightnessPoints: 8,
+    naturalVariationCvAtLeast: 0.30, minimumSamplesForVariation: 4, naturalVariationPoints: -10
+  },
+  automationPattern: { comboPoints: 45 },
+  retry: { pointsEach: -5, maximumReduction: -10 },
+  classifications: { lowMax: 30, uncertainMax: 60 }
+});
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const ScoreEngine = Object.freeze({
+  evaluate(metrics) {
+    const releaseLatencyMs = metrics.holdDurationMs - metrics.targetMs;
+    const precise = releaseLatencyMs <= RISK_CONFIG.release.preciseUnderMs;
+    const quick = !precise && releaseLatencyMs <= RISK_CONFIG.release.quickUnderMs;
+    const slow = releaseLatencyMs > RISK_CONFIG.release.slowOverMs;
+
+    const directDistance = metrics.firstPoint && metrics.lastPoint
+      ? Math.hypot(metrics.lastPoint.x - metrics.firstPoint.x, metrics.lastPoint.y - metrics.firstPoint.y)
+      : 0;
+    const straightness = metrics.totalDistance > 0 ? Math.min(1, directDistance / metrics.totalDistance) : 1;
+    const meanSpeed = metrics.speeds.length ? metrics.speeds.reduce((sum, v) => sum + v, 0) / metrics.speeds.length : 0;
+    const variance = metrics.speeds.length && meanSpeed
+      ? metrics.speeds.reduce((sum, v) => sum + (v - meanSpeed) ** 2, 0) / metrics.speeds.length
+      : 0;
+    const speedVariation = meanSpeed ? Math.sqrt(variance) / meanSpeed : 0;
+
+    const reasons = [{ label: "Base risk", delta: RISK_CONFIG.baseRisk }];
+    let score = RISK_CONFIG.baseRisk;
+    const apply = (label, delta) => { score += delta; reasons.push({ label, delta }); };
+
+    if (metrics.engageDelayMs !== null && metrics.engageDelayMs < RISK_CONFIG.engageDelay.suspiciousUnderMs) {
+      apply("Near-instant engagement", RISK_CONFIG.engageDelay.suspiciousPoints);
+    }
+    if (precise) apply("Release precisely on schedule", RISK_CONFIG.release.precisePoints);
+    else if (quick) apply("Fast reaction to completion", RISK_CONFIG.release.quickPoints);
+    else if (slow) apply("Long hold past completion", RISK_CONFIG.release.slowPoints);
+
+    const zeroMotion = metrics.totalDistance < RISK_CONFIG.movement.zeroMotionUnderPx;
+    if (metrics.totalDistance >= RISK_CONFIG.movement.minimumDistanceForStraightnessPx && straightness > RISK_CONFIG.movement.straightnessOver) {
+      apply("Motion path unusually straight", RISK_CONFIG.movement.straightnessPoints);
+    }
+    const naturalVariation = metrics.speeds.length >= RISK_CONFIG.movement.minimumSamplesForVariation
+      && speedVariation >= RISK_CONFIG.movement.naturalVariationCvAtLeast;
+    if (naturalVariation) apply("Natural micro-variation", RISK_CONFIG.movement.naturalVariationPoints);
+
+    // Zero movement alone is the normal case for a short hold. It only
+    // becomes a signal when paired with release timing that's too precise
+    // for a human reaction — that combination is the actual automation tell.
+    if (precise && zeroMotion) apply("Precise timing with no motion", RISK_CONFIG.automationPattern.comboPoints);
+
+    if (metrics.retries) {
+      apply(`${metrics.retries} retry${metrics.retries === 1 ? "" : "ies"}`,
+        Math.max(RISK_CONFIG.retry.maximumReduction, metrics.retries * RISK_CONFIG.retry.pointsEach));
+    }
+
+    score = clamp(Math.round(score), 0, 100);
+    const level = score <= RISK_CONFIG.classifications.lowMax ? "low"
+      : score <= RISK_CONFIG.classifications.uncertainMax ? "uncertain"
+      : "high";
+
+    return { score, level, reasons, releaseLatencyMs, straightness, speedVariation, naturalVariation };
+  }
+});
+
+/* ==========================================================================
+   Gesture capture — mirrors V1's Telemetry sampling (50ms interval,
+   Math.hypot distance, running speed array) but scoped to a single
+   press-and-hold instead of a whole-page session.
+   ========================================================================== */
+
+const Gesture = (() => {
+  let previousSample = null;
+  let firstPoint = null;
+  let lastPoint = null;
+  let totalDistance = 0;
+  let speeds = [];
+
+  function reset() {
+    previousSample = null;
+    firstPoint = null;
+    lastPoint = null;
+    totalDistance = 0;
+    speeds = [];
+  }
+
+  function onPointerDown(x, y) {
+    reset();
+    const now = performance.now();
+    previousSample = { x, y, time: now };
+    firstPoint = { x, y };
+    lastPoint = { x, y };
+  }
+
+  function onPointerMove(x, y) {
+    const now = performance.now();
+    lastPoint = { x, y };
+    if (previousSample && now - previousSample.time < RISK_CONFIG.movement.sampleIntervalMs) return;
+    if (previousSample) {
+      const distance = Math.hypot(x - previousSample.x, y - previousSample.y);
+      const elapsed = now - previousSample.time;
+      if (distance >= 0.5 && elapsed > 0) {
+        totalDistance += distance;
+        speeds.push(distance / (elapsed / 1000));
+      }
+    }
+    previousSample = { x, y, time: now };
+  }
+
+  return {
+    onPointerDown,
+    onPointerMove,
+    get totalDistance() { return totalDistance; },
+    get speeds() { return speeds; },
+    get firstPoint() { return firstPoint; },
+    get lastPoint() { return lastPoint; }
+  };
+})();
+
+/* ==========================================================================
+   Ring ritual + evaluation
+   ========================================================================== */
+
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const CIRCUMFERENCE = 552.92;
+const ring = document.getElementById("ring");
+const ringProgress = document.getElementById("ringProgress");
+const resultPanel = document.getElementById("resultPanel");
+const resultEl = document.getElementById("result");
+const simulateBtn = document.getElementById("simulateBtn");
+
+const pageReadyAt = performance.now();
+let firstPressAt = null;
+let engageDelayMs = null;
+let retries = 0;
+
+let holding = false;
+let simulating = false;
+let rafId = 0;
+let progress = 0;
+let holdStartPerf = 0;
+let targetMs = 0;
+
+function setProgress(p) {
+  progress = p;
+  ringProgress.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
+}
+
+function pickTargetMs() {
+  return 800 + Math.random() * 500; // per-attempt jitter — no two holds ask the same thing
+}
+
+// Plays the same irregular one-loop fill used by a real hold, but driven
+// by a timer instead of an actual press — used by the Simulate button so
+// the scripted path still goes through the same ritual, not a shortcut.
+function animateFill(durationMs, onDone) {
+  setProgress(0);
+  if (prefersReducedMotion.matches) {
+    setProgress(1);
+    onDone();
+    return;
+  }
+  const start = performance.now();
+  function frame(now) {
+    const elapsed = now - start;
+    const linear = clamp(elapsed / durationMs, 0, 1);
+    const wobble = Math.sin(elapsed / 90) * 0.015 * (1 - linear);
+    setProgress(clamp(Math.max(progress, linear + wobble), 0, 1));
+    if (progress < 1) requestAnimationFrame(frame);
+    else onDone();
+  }
+  requestAnimationFrame(frame);
+}
+
+function startHold() {
+  if (holding || simulating) return;
+  holding = true;
+  ring.classList.remove("is-receding");
+  ring.dataset.state = "holding";
+  resultPanel.classList.remove("is-visible");
+  resultEl.textContent = "";
+  targetMs = pickTargetMs();
+  holdStartPerf = performance.now();
+  if (firstPressAt === null) {
+    firstPressAt = holdStartPerf;
+    engageDelayMs = firstPressAt - pageReadyAt;
+  }
+
+  if (prefersReducedMotion.matches) {
+    setProgress(1);
+    return;
+  }
+
+  setProgress(0);
+  rafId = requestAnimationFrame(tick);
+}
+
+function tick(now) {
+  const elapsed = now - holdStartPerf;
+  const linear = clamp(elapsed / targetMs, 0, 1);
+  const wobble = Math.sin(elapsed / 90) * 0.015 * (1 - linear);
+  setProgress(clamp(Math.max(progress, linear + wobble), 0, 1));
+  if (holding && progress < 1) {
+    rafId = requestAnimationFrame(tick);
+  }
+}
+
+function animateRecede() {
+  ring.classList.add("is-receding");
+  ring.dataset.state = "idle";
+  setProgress(0);
+  window.setTimeout(() => ring.classList.remove("is-receding"), 260);
+}
+
+function endHold() {
+  if (!holding) return;
+  holding = false;
+  cancelAnimationFrame(rafId);
+
+  const holdDurationMs = performance.now() - holdStartPerf;
+
+  if (progress < 1) {
+    retries += 1;
+    animateRecede();
+    return;
+  }
+
+  const metrics = {
+    holdDurationMs,
+    targetMs,
+    engageDelayMs,
+    totalDistance: Gesture.totalDistance,
+    speeds: Gesture.speeds,
+    firstPoint: Gesture.firstPoint,
+    lastPoint: Gesture.lastPoint,
+    retries
+  };
+
+  const outcome = ScoreEngine.evaluate(metrics);
+  render(outcome);
+  retries = 0;
+}
+
+function render(outcome) {
+  if (outcome.level === "low") {
+    ring.dataset.state = "human";
+    resultEl.textContent = "This feels like you.";
+  } else {
+    ring.dataset.state = "uncertain";
+    resultEl.textContent = "I'm not sure about this one.";
+  }
+  resultPanel.classList.add("is-visible");
+}
+
+ring.addEventListener("pointerdown", event => {
+  ring.setPointerCapture(event.pointerId);
+  Gesture.onPointerDown(event.clientX, event.clientY);
+  startHold();
+});
+ring.addEventListener("pointermove", event => {
+  if (holding) Gesture.onPointerMove(event.clientX, event.clientY);
+});
+ring.addEventListener("pointerup", endHold);
+ring.addEventListener("pointercancel", endHold);
+
+ring.addEventListener("keydown", event => {
+  if ((event.key === " " || event.key === "Enter") && !event.repeat && !simulating) {
+    event.preventDefault();
+    Gesture.onPointerDown(0, 0);
+    startHold();
+  }
+});
+ring.addEventListener("keyup", event => {
+  if (event.key === " " || event.key === "Enter") {
+    event.preventDefault();
+    endHold();
+  }
+});
+
+/* ---------- Simulate: same evaluate()/render(), preset "unnatural" input,
+   played through the same one-loop ring animation as a real hold. ---------- */
+function runSimulation() {
+  if (holding || simulating) return;
+  simulating = true;
+  simulateBtn.disabled = true;
+  ring.classList.remove("is-receding");
+  ring.dataset.state = "holding";
+  resultPanel.classList.remove("is-visible");
+  resultEl.textContent = "";
+
+  const simulatedTargetMs = 900;
+  animateFill(simulatedTargetMs, () => {
+    const metrics = {
+      holdDurationMs: simulatedTargetMs, // released exactly on schedule
+      targetMs: simulatedTargetMs,       // -> releaseLatencyMs = 0 (precise)
+      engageDelayMs: 40,                 // near-instant engagement
+      totalDistance: 0,                  // zero motion during the hold
+      speeds: [],                        // no natural variation possible
+      firstPoint: null,
+      lastPoint: null,
+      retries: 0
+    };
+    const outcome = ScoreEngine.evaluate(metrics);
+    render(outcome);
+    simulating = false;
+    simulateBtn.disabled = false;
+  });
+}
+simulateBtn.addEventListener("click", runSimulation);
+
+window.CAPTCHA_V2 = Object.freeze({ riskConfig: RISK_CONFIG, scoreEngine: ScoreEngine, runSimulation });
+</script>
+</body>
+</html>
