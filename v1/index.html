@@ -1024,16 +1024,18 @@
 
     /* V1 desktop composition: computer left, readable tracking station right. */
     @media (min-width: 1101px) {
+      html, body { overflow: hidden; }
+
       .desktop {
-        grid-template-columns: minmax(720px, 980px) 350px;
-        gap: 10px;
+        grid-template-columns: minmax(760px, 1050px) 370px;
+        gap: 0;
         justify-content: center;
         align-items: center;
-        padding: 14px 24px;
+        padding: 8px 18px;
       }
 
       .computer-shell {
-        width: min(980px, calc((100dvh - 28px) * 1.333333));
+        width: min(1050px, calc(100vw - 330px), calc((100dvh - 20px) * 1.333333));
         margin: 0;
         justify-self: end;
       }
@@ -1042,14 +1044,14 @@
         position: relative;
         right: auto;
         bottom: auto;
-        width: 350px;
+        width: 370px;
         gap: 14px;
         align-self: center;
-        transform: translateX(-90px);
+        transform: translateX(-106px);
       }
 
-      #tracking-canvas { height: 230px; }
-      .activity-log { height: 196px; padding: 10px 12px; font-size: 15px; }
+      #tracking-canvas { height: 246px; }
+      .activity-log { height: 216px; padding: 10px 12px; font-size: 15px; }
       .behavior-window__bar { min-height: 34px; padding: 6px 8px; font-size: 15px; }
     }
 
@@ -1127,53 +1129,66 @@
     .result-summary-reasons h3 { font-size: 15px; }
 
     .dog-meme {
-      position: fixed;
-      z-index: 950;
-      left: clamp(18px, 34vw, 520px);
-      bottom: 2px;
-      width: min(285px, calc(100vw - 24px));
-      opacity: 0;
+      position: absolute;
+      z-index: auto;
+      left: 3%;
+      bottom: -2%;
+      width: 30%;
+      visibility: hidden;
       pointer-events: none;
-      transform: translateY(72%) scale(.92);
-      transform-origin: bottom center;
-      transition: opacity .18s steps(2, end), transform .26s steps(3, end);
+      transition: visibility 0s linear .28s;
     }
 
-    .dog-meme[data-position="top"] {
-      top: 0;
+    .dog-meme[data-position="ground-right"] { right: 2%; left: auto; }
+    .dog-meme[data-position="top-left"],
+    .dog-meme[data-position="top-right"] {
+      top: -1%;
       bottom: auto;
-      left: 0;
-      width: min(255px, calc(100vw - 24px));
-      transform: translateY(-76%) scale(.92);
-      transform-origin: top center;
+      left: 8%;
+      width: 28%;
     }
+    .dog-meme[data-position="top-left"] { left: -2%; }
+    .dog-meme[data-position="top-right"] { right: -2%; left: auto; }
 
     .dog-meme.is-visible {
-      opacity: 1;
+      visibility: visible;
       pointer-events: auto;
-      transform: translateY(0) scale(1);
+      transition-delay: 0s;
     }
-
-    .dog-meme[data-position="top"].is-visible { transform: translateY(0) scale(1); }
 
     .dog-meme__image {
+      position: relative;
+      z-index: 3;
       display: block;
       width: 100%;
-      height: 220px;
+      height: auto;
+      aspect-ratio: 1;
       object-fit: contain;
       object-position: center bottom;
+      opacity: 0;
       filter: drop-shadow(5px 6px 0 rgba(0,0,0,.45));
-      transition: transform .16s steps(2, end);
+      transform: translateY(64%) scale(.92);
+      transform-origin: bottom center;
+      transition: opacity .18s steps(2, end), transform .28s steps(4, end);
     }
 
-    .dog-meme.is-nudging .dog-meme__image { transform: scale(1.045); }
+    .dog-meme.is-visible .dog-meme__image { opacity: 1; transform: translateY(8%) scale(1); }
+    .dog-meme[data-position^="top"] .dog-meme__image {
+      clip-path: inset(0 0 36% 0);
+      transform: translateY(-56%) scale(.94);
+      transform-origin: top center;
+    }
+    .dog-meme[data-position^="top"].is-visible .dog-meme__image { transform: translateY(0) scale(1); }
+
+    .dog-meme.is-nudging .dog-meme__image { transform: translateY(8%) scale(1.045); }
+    .dog-meme[data-position^="top"].is-nudging .dog-meme__image { transform: translateY(0) scale(1.045); }
     .dog-meme[data-kind="chihuahua"].is-visible .dog-meme__image { animation: dog-shake .38s steps(4, end) 2; }
 
     .dog-bubble {
       position: absolute;
-      z-index: 2;
-      top: -34px;
-      left: 54%;
+      z-index: 5;
+      top: 4%;
+      left: 58%;
       min-width: 205px;
       max-width: 275px;
       padding: 12px 15px;
@@ -1183,7 +1198,12 @@
       box-shadow: 0 0 0 3px #72a9ff, 7px 7px 0 #000;
       clip-path: polygon(8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, 100% 4px, 100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) 100%, 8px 100%, 8px calc(100% - 4px), 0 calc(100% - 4px), 0 8px, 4px 8px, 4px 4px, 8px 4px);
       font: 700 15px/1.25 Arial, Helvetica, system-ui, sans-serif;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .16s steps(2, end), transform .2s steps(2, end);
     }
+
+    .dog-meme.is-visible .dog-bubble { opacity: 1; transform: translateY(0); }
 
     .dog-bubble::after {
       position: absolute;
@@ -1199,24 +1219,19 @@
       transform: rotate(45deg);
     }
 
-    .dog-meme[data-position="top"] .dog-bubble {
-      top: 18px;
-      left: 92%;
+    .dog-meme[data-position^="top"] .dog-bubble {
+      top: 10%;
+      left: 70%;
     }
 
-    .dog-meme[data-position="top"] .dog-bubble::after {
-      top: -11px;
-      bottom: auto;
-      transform: rotate(225deg);
-    }
-
-    .dog-meme[data-position="top"] .dog-meme__close { top: 10px; right: -80px; }
+    .dog-meme[data-position^="top"] .dog-meme__close { top: 7%; right: auto; left: calc(70% + 175px); }
 
     .dog-meme__close {
       position: absolute;
-      z-index: 3;
-      top: -43px;
-      right: -5px;
+      z-index: 6;
+      top: 1%;
+      right: auto;
+      left: calc(58% + 175px);
       width: 30px;
       height: 30px;
       padding: 0;
@@ -1233,7 +1248,6 @@
 
     @media (max-width: 1100px) {
       .desktop { min-height: 100dvh; overflow: auto; }
-      .dog-meme:not([data-position="top"]) { left: 12px; }
       .result-data-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .monitor-screen { top: 7.55%; left: 23.35%; width: 49.5%; height: 49.1%; }
       .screen-ui { width: 133.3334%; height: 133.3334%; transform: scale(.75); }
@@ -1241,8 +1255,10 @@
 
     /* The in-app preview is often just over 1000px wide: keep the tools beside the CRT there too. */
     @media (min-width: 950px) and (max-width: 1100px) {
+      html, body { overflow: hidden; }
+
       .desktop {
-        grid-template-columns: minmax(620px, 700px) 265px;
+        grid-template-columns: minmax(650px, 760px) 280px;
         gap: 4px;
         justify-content: center;
         align-items: center;
@@ -1250,7 +1266,7 @@
       }
 
       .computer-shell {
-        width: min(700px, calc((100dvh - 16px) * 1.333333));
+        width: min(760px, calc(100vw - 280px), calc((100dvh - 20px) * 1.333333));
         margin: 0;
         justify-self: end;
       }
@@ -1259,15 +1275,20 @@
         position: relative;
         right: auto;
         bottom: auto;
-        width: 265px;
+        width: 280px;
         gap: 10px;
         align-self: center;
-        transform: translateX(-64px);
+        transform: translateX(-76px);
       }
 
-      #tracking-canvas { height: 170px; }
-      .activity-log { height: 156px; }
+      #tracking-canvas { height: 184px; }
+      .activity-log { height: 172px; }
       .screen-ui { width: 151.5152%; height: 151.5152%; transform: scale(.66); }
+      .monitor-screen #test-screen { padding-top: 20px; }
+      .monitor-screen .captcha-board { width: min(250px, 100%); }
+      .monitor-screen .captcha-copy-column { min-height: 250px; }
+      .monitor-screen .captcha-actions,
+      .monitor-screen .test-switcher { width: calc(100% - 266px); }
     }
 
     @media (max-width: 700px) {
@@ -1280,6 +1301,8 @@
 
     @media (prefers-reduced-motion: reduce) {
       .dog-meme { transition: none; }
+      .dog-meme__image,
+      .dog-bubble { transition: none; }
       .dog-meme[data-kind="chihuahua"].is-visible .dog-meme__image { animation: none; }
     }
   </style>
@@ -1389,6 +1412,11 @@
 
         </div>
       </div>
+      <aside class="dog-meme" id="dog-meme" data-kind="" data-position="ground-left" aria-label="Dog reaction" aria-hidden="true">
+        <p class="dog-bubble" id="dog-caption"></p>
+        <img class="dog-meme__image" id="dog-image" src="../assets/dog-shiba.png" width="640" height="640" alt="">
+        <button class="dog-meme__close" id="dog-close" type="button" tabindex="-1" aria-label="Dismiss dog reaction">×</button>
+      </aside>
       <img class="computer-frame" src="../assets/computer-frame.png" width="1448" height="1086" alt="" draggable="false">
     </div>
 
@@ -1409,12 +1437,6 @@
       </section>
     </aside>
   </div>
-
-  <aside class="dog-meme" id="dog-meme" data-kind="" aria-label="Dog reaction" aria-hidden="true">
-    <p class="dog-bubble" id="dog-caption"></p>
-    <img class="dog-meme__image" id="dog-image" src="../assets/dog-shiba.png" width="640" height="640" alt="">
-    <button class="dog-meme__close" id="dog-close" type="button" tabindex="-1" aria-label="Dismiss dog reaction">×</button>
-  </aside>
 
   <div class="pixel-cursor" id="pixel-cursor" aria-hidden="true">
     <svg class="cursor-arrow" viewBox="0 0 44 52" shape-rendering="crispEdges">
@@ -1496,12 +1518,12 @@
       correctionCycles: 3,
       verifyHoverMs: 3000,
       dogs: Object.freeze({
-        golden: Object.freeze({ image: "../assets/dog-golden.png", alt: "A blankly staring golden retriever", caption: "bro?", position: "top" }),
-        chihuahua: Object.freeze({ image: "../assets/dog-chihuahua.png", alt: "A shocked Chihuahua", caption: "clicking harder won’t help.", position: "bottom" }),
-        dachshund: Object.freeze({ image: "../assets/dog-dachshund.png", alt: "A confused dachshund tilting its head", caption: "final answer? …final final?", position: "top" }),
-        shiba: Object.freeze({ image: "../assets/dog-shiba.png", alt: "A suspicious Shiba Inu", caption: "it’s just a button.", position: "top" }),
-        husky: Object.freeze({ image: "../assets/dog-husky.png", alt: "An irritated husky", caption: "welcome back, suspicious citizen.", position: "bottom" }),
-        pomeranian: Object.freeze({ image: "../assets/dog-pomeranian.png", alt: "A smug Pomeranian wearing sunglasses", caption: "correct answers. suspicious vibes.", position: "bottom" })
+        golden: Object.freeze({ image: "../assets/dog-golden.png", alt: "A blankly staring golden retriever", caption: "bro?", position: "ground-left" }),
+        chihuahua: Object.freeze({ image: "../assets/dog-chihuahua.png", alt: "A shocked Chihuahua", caption: "clicking harder won’t help.", position: "ground-right" }),
+        dachshund: Object.freeze({ image: "../assets/dog-dachshund.png", alt: "A confused dachshund tilting its head", caption: "final answer? …final final?", position: "top-left" }),
+        shiba: Object.freeze({ image: "../assets/dog-shiba.png", alt: "A suspicious Shiba Inu", caption: "it’s just a button.", position: "top-right" }),
+        husky: Object.freeze({ image: "../assets/dog-husky.png", alt: "An irritated husky", caption: "welcome back, suspicious citizen.", position: "ground-right" }),
+        pomeranian: Object.freeze({ image: "../assets/dog-pomeranian.png", alt: "A smug Pomeranian wearing sunglasses", caption: "correct answers. suspicious vibes.", position: "ground-left" })
       })
     });
 
