@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Are You Human Enough — v3</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --ink: #1d1d1f;
+    --muted: #74747a;
+    --faint: #b2b2b8;
+    --accent: #0a84ff;
+    --accent-hi: #64d2ff;
+    --good: #23855b;
+    --warn: #9a5d10;
+    --glass-bg: rgba(255, 255, 255, 0.36);
+    --glass-border: rgba(255, 255, 255, 0.66);
+    --glass-shadow: 0 18px 52px rgba(99, 102, 241, 0.13), 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; margin: 0; }
+  body {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font: inherit; }
+  button { touch-action: manipulation; }
+
+  .skip-link {
+    position: fixed;
+    z-index: 20;
+    top: 10px;
+    left: 10px;
+    padding: 9px 13px;
+    color: #fff;
+    background: var(--ink);
+    border-radius: 10px;
+    transform: translateY(-160%);
+  }
+  .skip-link:focus { transform: translateY(0); }
+
+  .backdrop {
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+    overflow: hidden;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(58px);
+    opacity: .4;
+    will-change: transform;
+  }
+  .blob-a {
+    width: 50vmax; height: 50vmax; left: -14%; top: -18%;
+    background: radial-gradient(circle at 30% 30%, #a78bfa, transparent 70%);
+    animation: drift-a 24s ease-in-out infinite alternate;
+  }
+  .blob-b {
+    width: 44vmax; height: 44vmax; right: -18%; top: 4%;
+    background: radial-gradient(circle at 60% 40%, #7dd3fc, transparent 70%);
+    animation: drift-b 19s ease-in-out infinite alternate;
+  }
+  .blob-c {
+    width: 48vmax; height: 48vmax; left: 16%; bottom: -24%;
+    background: radial-gradient(circle at 50% 50%, #f0abfc, transparent 70%);
+    animation: drift-c 27s ease-in-out infinite alternate;
+  }
+  @keyframes drift-a { to { transform: translate(16%, 18%) scale(1.18); } }
+  @keyframes drift-b { to { transform: translate(-18%, 14%) scale(.88); } }
+  @keyframes drift-c { to { transform: translate(14%, -16%) scale(1.14); } }
+
+  .shell {
+    width: min(1240px, calc(100% - 48px));
+    min-height: calc(100dvh - 70px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(480px, 1.55fr) minmax(300px, .8fr);
+    gap: clamp(48px, 6vw, 92px);
+    align-items: center;
+    padding: clamp(44px, 7vh, 76px) 0 32px;
+  }
+
+  .challenge { min-width: 0; text-align: center; }
+  .version {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .headline {
+    max-width: 690px;
+    margin: 0 auto 30px;
+    font-size: clamp(31px, 4vw, 50px);
+    font-weight: 650;
+    letter-spacing: -.025em;
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+
+  .glass {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass { background: rgba(255,255,255,.88); }
+  }
+
+  .challenge-card {
+    width: min(720px, 100%);
+    margin: 0 auto;
+    padding: clamp(18px, 3vw, 30px);
+    border-radius: 24px;
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+  .challenge-card.is-resolving { opacity: .7; transform: scale(.992); }
+
+  .captcha-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2.77 / 1;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 16px;
+    background: rgba(255,255,255,.7);
+    box-shadow: 0 1px 0 rgba(255,255,255,.8) inset;
+  }
+  .captcha-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 280ms ease;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .captcha-image.is-loaded { opacity: 1; }
+  .image-loading {
+    position: absolute;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .captcha-image.is-loaded + .image-loading { display: none; }
+
+  .entry-form { margin-top: 22px; }
+  .input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+  .code-input {
+    width: 100%;
+    min-height: 54px;
+    padding: 0 18px;
+    border: 1px solid rgba(29,29,31,.16);
+    border-radius: 15px;
+    outline: 0;
+    color: var(--ink);
+    background: rgba(255,255,255,.78);
+    font-size: 21px;
+    font-weight: 560;
+    letter-spacing: .12em;
+    box-shadow: 0 1px 0 rgba(255,255,255,.8) inset;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  }
+  .code-input:focus {
+    border-color: var(--accent);
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 0 0 4px rgba(10,132,255,.14);
+  }
+  .code-input:disabled { color: var(--muted); opacity: .75; }
+
+  .action {
+    min-width: 104px;
+    min-height: 54px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 15px;
+    color: #fff;
+    background: var(--accent);
+    font-size: 15px;
+    font-weight: 620;
+    cursor: pointer;
+    box-shadow: 0 7px 18px rgba(10,132,255,.2);
+    transition: opacity 150ms ease, transform 150ms ease, background 150ms ease;
+  }
+  .action:hover { background: #0077ed; }
+  .action:active { transform: scale(.975); }
+  .action:focus-visible { outline: 3px solid rgba(10,132,255,.38); outline-offset: 3px; }
+  .action:disabled { cursor: default; opacity: .48; transform: none; }
+
+  .hint {
+    min-height: 22px;
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .hint.is-error { color: #a14545; }
+
+  .result-area {
+    min-height: 89px;
+    display: grid;
+    place-content: center;
+    padding-top: 18px;
+  }
+  .result-message {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(20px, 2.4vw, 27px);
+    font-weight: 610;
+    letter-spacing: -.015em;
+    opacity: 0;
+    transform: translateY(7px);
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+  .result-message[data-tone="match"] { color: var(--good); }
+  .result-message[data-tone="mismatch"] { color: #9b4848; }
+  .result-message[data-tone="uncertain"] { color: var(--warn); }
+  .result-area.is-visible .result-message { opacity: 1; transform: translateY(0); }
+  .next-prompt {
+    margin: 7px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    opacity: 0;
+    transition: opacity 240ms ease 80ms;
+  }
+  .result-area.is-visible .next-prompt { opacity: 1; }
+
+  .observations {
+    position: sticky;
+    top: 36px;
+    min-width: 0;
+    align-self: center;
+    padding-left: clamp(24px, 3.2vw, 44px);
+    border-left: 1px solid rgba(29,29,31,.13);
+  }
+  .observation-heading {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 640;
+    letter-spacing: .01em;
+  }
+  .observation-subtitle {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .observation-scroll {
+    position: relative;
+    height: min(48vh, 430px);
+    min-height: 300px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(29,29,31,.2) transparent;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 100%);
+  }
+  .observation-scroll.is-browsing {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 7%, #000 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 7%, #000 100%);
+  }
+  .observation-list {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 0;
+    padding: 0 8px 10px 0;
+    list-style: none;
+  }
+  .observation-list::before { content: ""; flex: 1 0 128px; }
+  .observation-entry {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(16px, 1.35vw, 18px);
+    line-height: 1.45;
+    opacity: .2;
+    transition: opacity 400ms ease, transform 500ms ease;
+  }
+  .observation-entry:nth-last-child(4) { opacity: .22; }
+  .observation-entry:nth-last-child(3) { opacity: .4; }
+  .observation-entry:nth-last-child(2) { opacity: .65; }
+  .observation-entry:last-child { opacity: 1; font-weight: 520; }
+  .observation-entry.is-new { animation: observation-in 500ms ease both; }
+  .observation-scroll.is-browsing .observation-entry { opacity: .86; }
+  @keyframes observation-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .empty-observation {
+    position: absolute;
+    right: 8px;
+    bottom: 12px;
+    left: 0;
+    margin: 0;
+    color: var(--faint);
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .latest {
+    min-height: 36px;
+    margin-top: 8px;
+    padding: 0 2px;
+    border: 0;
+    color: var(--accent);
+    background: transparent;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+  .latest.is-visible { opacity: 1; pointer-events: auto; }
+  .latest:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 5px; }
+
+  .fineprint {
+    margin: 0;
+    padding: 0 24px 24px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 820px) {
+    .shell {
+      width: min(680px, calc(100% - 30px));
+      min-height: auto;
+      grid-template-columns: 1fr;
+      gap: 46px;
+      padding: 44px 0 42px;
+    }
+    .headline { margin-bottom: 24px; }
+    .observations {
+      position: relative;
+      top: auto;
+      padding: 28px 0 0;
+      border-top: 1px solid rgba(29,29,31,.13);
+      border-left: 0;
+    }
+    .observation-scroll { height: 300px; min-height: 0; }
+    .observation-list::before { flex-basis: 74px; }
+  }
+
+  @media (max-width: 520px) {
+    .shell { width: min(100% - 22px, 680px); padding-top: 30px; }
+    .challenge-card { padding: 14px; border-radius: 19px; }
+    .captcha-frame { border-radius: 12px; }
+    .input-row { grid-template-columns: 1fr; }
+    .action { min-height: 48px; }
+    .result-area { min-height: 96px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob { animation: none; }
+    .challenge-card,
+    .captcha-image,
+    .action,
+    .result-message,
+    .next-prompt,
+    .observation-entry { transition: none; animation: none; }
+  }
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#challenge">Skip to challenge</a>
+
+  <div class="backdrop" aria-hidden="true">
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="blob blob-c"></div>
+  </div>
+
+  <main class="shell">
+    <section class="challenge" id="challenge" aria-labelledby="page-title">
+      <p class="version">Are You Human Enough? · Version 3</p>
+      <h1 class="headline" id="page-title">Type what you see.</h1>
+
+      <div class="challenge-card glass" id="challenge-card">
+        <div class="captcha-frame">
+          <img class="captcha-image" id="captcha-image" width="1400" height="505" alt="A distorted five-character verification code" draggable="false">
+          <span class="image-loading" id="image-loading">Loading image…</span>
+        </div>
+
+        <form class="entry-form" id="entry-form" novalidate>
+          <label class="sr-only" for="code-input">Verification code</label>
+          <div class="input-row">
+            <input class="code-input" id="code-input" name="code" type="text" inputmode="text" maxlength="8"
+                   autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="input-hint">
+            <button class="action" id="action-button" type="submit">Submit</button>
+          </div>
+          <p class="hint" id="input-hint" aria-live="polite">Type what you see. Press Enter.</p>
+        </form>
+
+        <div class="result-area" id="result-area" aria-live="polite" aria-atomic="true">
+          <p class="result-message" id="result-message"></p>
+          <p class="next-prompt" id="next-prompt"></p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="observations" aria-labelledby="observation-heading">
+      <h2 class="observation-heading" id="observation-heading">What I noticed</h2>
+      <p class="observation-subtitle">One observation after each round.</p>
+      <div class="observation-scroll" id="observation-scroll" tabindex="0" aria-label="Session observations">
+        <ol class="observation-list" id="observation-list"></ol>
+        <p class="empty-observation" id="empty-observation">I haven’t observed a completed round yet.</p>
+      </div>
+      <button class="latest" id="latest-button" type="button">Latest ↓</button>
+    </aside>
+  </main>
+
+  <p class="fineprint">A local classroom experiment. Your input and timing stay in this page session.</p>
+  <div class="sr-only" id="announcer" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* All behavior thresholds and judgment conditions are kept here so V3 can
+   reuse the input model without exposing a score or formula in the interface. */
+const V3_CONFIG = Object.freeze({
+  transitionMs: 360,
+  enterGuardMs: 420,
+  feedback: Object.freeze({
+    waitedBeforeTypingMs: 2600,
+    pauseBetweenInputsMs: 950,
+    fasterRatio: 0.82,
+    slowerRatio: 1.18,
+    similarRatioTolerance: 0.14,
+    rhythmMinimumIntervals: 3,
+    familiarMinimumRounds: 3,
+    familiarRhythmCvMax: 0.24,
+    familiarPaceCvMax: 0.22
+  }),
+  judgment: Object.freeze({
+    immediateStartUnderMs: 140,
+    veryFastCompletionUnderMs: 720,
+    automationEvidenceRequired: 3
+  })
+});
+
+/* Mapping verified visually from the six supplied Round3 reference images. */
+const CHALLENGES = Object.freeze([
+  Object.freeze({ file: "assets/0dc1529c-16b9-468f-b07f-c0e7bafd0dc7.png", answer: "b4R9x" }),
+  Object.freeze({ file: "assets/61644214-030d-49f4-a06c-057848d2afc4.png", answer: "H2s7M" }),
+  Object.freeze({ file: "assets/8614b08d-392f-467c-b7fc-413e03b638cb.png", answer: "c9W4r" }),
+  Object.freeze({ file: "assets/abcbc5a7-43f6-45c7-abec-39e03e3bf660.png", answer: "T6n3A" }),
+  Object.freeze({ file: "assets/ad021b0e-6504-4356-b97a-c7ebb5337ecd.png", answer: "p8D5v" }),
+  Object.freeze({ file: "assets/f0921811-f042-423d-95f7-0d4a2f94c59e.png", answer: "K7m2Q" })
+]);
+
+const normalizeAnswer = value => value.trim().toLowerCase();
+const mean = values => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+const coefficientOfVariation = values => {
+  if (values.length < 2) return Infinity;
+  const average = mean(values);
+  if (!average) return Infinity;
+  const variance = mean(values.map(value => (value - average) ** 2));
+  return Math.sqrt(variance) / average;
+};
+
+function shuffledIndices(length, avoidFirst = -1) {
+  const indices = Array.from({ length }, (_, index) => index);
+  for (let index = indices.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [indices[index], indices[swapIndex]] = [indices[swapIndex], indices[index]];
+  }
+  if (indices.length > 1 && indices[0] === avoidFirst) {
+    const swapIndex = 1 + Math.floor(Math.random() * (indices.length - 1));
+    [indices[0], indices[swapIndex]] = [indices[swapIndex], indices[0]];
+  }
+  return indices;
+}
+
+const FeedbackEngine = Object.freeze({
+  choose(round, history) {
+    const previous = history.at(-1) || null;
+    const rules = V3_CONFIG.feedback;
+    const candidates = [];
+
+    const rhythmRounds = [...history, round].filter(item => item.averageInputIntervalMs > 0 && item.inputIntervals.length >= rules.rhythmMinimumIntervals);
+    if (rhythmRounds.length >= rules.familiarMinimumRounds) {
+      const rhythmCv = coefficientOfVariation(rhythmRounds.slice(-3).map(item => item.averageInputIntervalMs));
+      const paceCv = coefficientOfVariation(rhythmRounds.slice(-3).map(item => item.totalMs));
+      if (rhythmCv <= rules.familiarRhythmCvMax && paceCv <= rules.familiarPaceCvMax) {
+        candidates.push("Your rhythm is becoming familiar.");
+      }
+    }
+
+    if (round.editCount > 0) candidates.push("You went back and changed something.");
+    if (previous && round.editCount === 0 && previous.editCount > 0) candidates.push("No changes this time.");
+
+    if (previous) {
+      const ratio = round.totalMs / previous.totalMs;
+      if (ratio <= rules.fasterRatio) candidates.push("You finished faster this time.");
+      else if (ratio >= rules.slowerRatio) candidates.push("You took more time this round.");
+      else if (Math.abs(ratio - 1) <= rules.similarRatioTolerance) candidates.push("Your pace was similar to last time.");
+    }
+
+    if (round.startDelayMs >= rules.waitedBeforeTypingMs) candidates.push("You waited before you started.");
+    if (round.longPauseCount > 0) candidates.push("There was a pause between entries.");
+    if (round.pasted) candidates.push("You entered the code all at once.");
+    if (round.editCount === 0 && !round.pasted) candidates.push("You completed the code without changing it.");
+
+    const lastObservation = previous?.observation || "";
+    return candidates.find(candidate => candidate !== lastObservation) || candidates[0] || "You completed another round.";
+  }
+});
+
+const JudgmentEngine = Object.freeze({
+  evaluate(round) {
+    if (!round.correct) return { tone: "mismatch", message: "The code didn’t match." };
+
+    let automationEvidence = 0;
+    if (round.startDelayMs < V3_CONFIG.judgment.immediateStartUnderMs) automationEvidence += 1;
+    if (round.totalMs < V3_CONFIG.judgment.veryFastCompletionUnderMs) automationEvidence += 1;
+    if (round.pasted) automationEvidence += 1;
+    if (round.inputIntervals.length === 0 && round.editCount === 0) automationEvidence += 1;
+
+    if (automationEvidence >= V3_CONFIG.judgment.automationEvidenceRequired) {
+      return { tone: "uncertain", message: "I’m not sure about this one." };
+    }
+    return { tone: "match", message: "This feels like you." };
+  }
+});
+
+const image = document.getElementById("captcha-image");
+const imageLoading = document.getElementById("image-loading");
+const form = document.getElementById("entry-form");
+const input = document.getElementById("code-input");
+const actionButton = document.getElementById("action-button");
+const hint = document.getElementById("input-hint");
+const card = document.getElementById("challenge-card");
+const resultArea = document.getElementById("result-area");
+const resultMessage = document.getElementById("result-message");
+const nextPrompt = document.getElementById("next-prompt");
+const observationScroll = document.getElementById("observation-scroll");
+const observationList = document.getElementById("observation-list");
+const emptyObservation = document.getElementById("empty-observation");
+const latestButton = document.getElementById("latest-button");
+const announcer = document.getElementById("announcer");
+
+let deck = [];
+let currentIndex = -1;
+let lastIndex = -1;
+let phase = "loading";
+let enterGuardUntil = 0;
+let history = [];
+let composing = false;
+let pendingComposition = false;
+let replacementPending = false;
+let previousValue = "";
+let round = null;
+let browsingHistory = false;
+
+function freshRound() {
+  return {
+    armed: false,
+    imageLoaded: false,
+    shownAt: 0,
+    firstInputAt: null,
+    lastInputAt: null,
+    inputIntervals: [],
+    editCount: 0,
+    deletionCount: 0,
+    replacementCount: 0,
+    pasted: false
+  };
+}
+
+function nextChallengeIndex() {
+  if (!deck.length) deck = shuffledIndices(CHALLENGES.length, lastIndex);
+  const index = deck.shift();
+  lastIndex = index;
+  return index;
+}
+
+function armRoundWhenReady() {
+  if (!round || round.armed || !round.imageLoaded || document.visibilityState !== "visible") return;
+  round.armed = true;
+  round.shownAt = performance.now();
+  phase = "input";
+  input.disabled = false;
+  actionButton.disabled = false;
+  input.focus({ preventScroll: true });
+  announcer.textContent = "Verification image ready.";
+}
+
+function loadRound() {
+  currentIndex = nextChallengeIndex();
+  round = freshRound();
+  phase = "loading";
+  enterGuardUntil = performance.now() + V3_CONFIG.enterGuardMs;
+  composing = false;
+  pendingComposition = false;
+  replacementPending = false;
+  previousValue = "";
+
+  input.value = "";
+  input.disabled = true;
+  actionButton.disabled = true;
+  actionButton.textContent = "Submit";
+  hint.textContent = "Type what you see. Press Enter.";
+  hint.classList.remove("is-error");
+  resultArea.classList.remove("is-visible");
+  resultMessage.textContent = "";
+  resultMessage.removeAttribute("data-tone");
+  nextPrompt.textContent = "";
+  card.classList.remove("is-resolving");
+  image.classList.remove("is-loaded");
+  imageLoading.textContent = "Loading image…";
+
+  image.src = CHALLENGES[currentIndex].file;
+  if (image.complete && image.naturalWidth) {
+    round.imageLoaded = true;
+    requestAnimationFrame(() => {
+      image.classList.add("is-loaded");
+      armRoundWhenReady();
+    });
+  }
+}
+
+image.addEventListener("load", () => {
+  if (!round) return;
+  round.imageLoaded = true;
+  image.classList.add("is-loaded");
+  armRoundWhenReady();
+});
+
+image.addEventListener("error", () => {
+  imageLoading.textContent = "The image could not be loaded.";
+  hint.textContent = "Please reload the page to try again.";
+  hint.classList.add("is-error");
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") armRoundWhenReady();
+});
+
+function registerEffectiveInput(value, inputType) {
+  if (!round?.armed || phase !== "input" || value === previousValue) {
+    replacementPending = false;
+    previousValue = value;
+    return;
+  }
+
+  const now = performance.now();
+  if (value && round.firstInputAt === null) round.firstInputAt = now;
+  if (round.lastInputAt !== null) round.inputIntervals.push(now - round.lastInputAt);
+  round.lastInputAt = now;
+
+  const deleting = inputType.startsWith("delete");
+  const replacing = replacementPending
+    || (Boolean(previousValue) && (inputType === "insertReplacementText" || inputType === "insertTranspose"));
+  if (deleting) {
+    round.deletionCount += 1;
+    round.editCount += 1;
+  } else if (replacing) {
+    round.replacementCount += 1;
+    round.editCount += 1;
+  }
+  if (inputType === "insertFromPaste") round.pasted = true;
+  replacementPending = false;
+  previousValue = value;
+}
+
+input.addEventListener("beforeinput", event => {
+  if (phase !== "input") return;
+  replacementPending = event.inputType.startsWith("insert")
+    && input.selectionStart !== input.selectionEnd
+    && Boolean(input.value);
+});
+
+input.addEventListener("compositionstart", () => { composing = true; });
+input.addEventListener("compositionend", () => {
+  composing = false;
+  pendingComposition = true;
+  const clean = input.value.replace(/[^a-z0-9]/gi, "").slice(0, 8);
+  input.value = clean;
+  registerEffectiveInput(clean, "insertCompositionText");
+  pendingComposition = false;
+});
+
+input.addEventListener("paste", () => {
+  if (round && phase === "input") round.pasted = true;
+});
+
+input.addEventListener("input", event => {
+  const clean = input.value.replace(/[^a-z0-9]/gi, "").slice(0, 8);
+  if (input.value !== clean) input.value = clean;
+  if (composing || event.isComposing || pendingComposition) return;
+  registerEffectiveInput(clean, event.inputType || "insertText");
+});
+
+function buildRoundRecord(now) {
+  const startDelayMs = round.firstInputAt === null ? now - round.shownAt : round.firstInputAt - round.shownAt;
+  const totalMs = now - round.shownAt;
+  const longPauseCount = round.inputIntervals.filter(interval => interval >= V3_CONFIG.feedback.pauseBetweenInputsMs).length;
+  return {
+    challengeIndex: currentIndex,
+    startDelayMs,
+    totalMs,
+    inputIntervals: [...round.inputIntervals],
+    averageInputIntervalMs: mean(round.inputIntervals),
+    longPauseCount,
+    editCount: round.editCount,
+    deletionCount: round.deletionCount,
+    replacementCount: round.replacementCount,
+    pasted: round.pasted,
+    correct: normalizeAnswer(input.value) === normalizeAnswer(CHALLENGES[currentIndex].answer),
+    observation: ""
+  };
+}
+
+function addObservation(text) {
+  emptyObservation.hidden = true;
+  const item = document.createElement("li");
+  item.className = "observation-entry is-new";
+  item.textContent = text;
+  observationList.appendChild(item);
+  if (!browsingHistory) {
+    requestAnimationFrame(() => observationScroll.scrollTo({ top: observationScroll.scrollHeight, behavior: "smooth" }));
+  }
+  window.setTimeout(() => item.classList.remove("is-new"), 560);
+}
+
+function showResult(record) {
+  const outcome = JudgmentEngine.evaluate(record);
+  record.observation = FeedbackEngine.choose(record, history);
+  history.push(record);
+
+  resultMessage.textContent = outcome.message;
+  resultMessage.dataset.tone = outcome.tone;
+  nextPrompt.textContent = "Press Enter for the next round.";
+  resultArea.classList.add("is-visible");
+  actionButton.textContent = "Next round";
+  actionButton.disabled = false;
+  card.classList.remove("is-resolving");
+  addObservation(record.observation);
+  phase = "result";
+  enterGuardUntil = performance.now() + V3_CONFIG.enterGuardMs;
+  announcer.textContent = `${outcome.message} ${record.observation}`;
+}
+
+function submitRound() {
+  if (phase !== "input" || !round?.armed) return;
+  if (!input.value.trim()) {
+    hint.textContent = "Please enter the code.";
+    hint.classList.add("is-error");
+    input.focus({ preventScroll: true });
+    return;
+  }
+
+  phase = "resolving";
+  const record = buildRoundRecord(performance.now());
+  input.disabled = true;
+  actionButton.disabled = true;
+  hint.textContent = "Reading your response…";
+  hint.classList.remove("is-error");
+  card.classList.add("is-resolving");
+  window.setTimeout(() => showResult(record), V3_CONFIG.transitionMs);
+}
+
+function advanceRound() {
+  if (phase !== "result" || performance.now() < enterGuardUntil) return;
+  loadRound();
+}
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  if (phase === "input") submitRound();
+  else if (phase === "result") advanceRound();
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key !== "Enter" || event.repeat || event.isComposing) return;
+  if (performance.now() < enterGuardUntil) {
+    event.preventDefault();
+    return;
+  }
+  if (phase === "result") {
+    event.preventDefault();
+    advanceRound();
+  }
+});
+
+function updateHistoryBrowsingState() {
+  const distanceFromBottom = observationScroll.scrollHeight - observationScroll.clientHeight - observationScroll.scrollTop;
+  const browsing = distanceFromBottom > 24;
+  browsingHistory = browsing;
+  observationScroll.classList.toggle("is-browsing", browsing);
+  latestButton.classList.toggle("is-visible", browsing);
+}
+
+observationScroll.addEventListener("scroll", updateHistoryBrowsingState, { passive: true });
+latestButton.addEventListener("click", () => {
+  observationScroll.scrollTo({ top: observationScroll.scrollHeight, behavior: "smooth" });
+  observationScroll.focus({ preventScroll: true });
+});
+
+window.CAPTCHA_V3 = Object.freeze({
+  config: V3_CONFIG,
+  challenges: CHALLENGES,
+  normalizeAnswer,
+  feedbackEngine: FeedbackEngine,
+  judgmentEngine: JudgmentEngine,
+  getState: () => ({ phase, currentIndex, history: history.map(item => ({ ...item })) })
+});
+
+loadRound();
+</script>
+</body>
+</html>
