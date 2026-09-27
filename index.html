@@ -130,55 +130,6 @@
       transform: translateX(-50%);
     }
 
-    .intro {
-      position: absolute;
-      z-index: 8;
-      top: 28px;
-      left: clamp(18px, 4vw, 64px);
-      width: min(390px, 42vw);
-      margin: 0;
-      font-size: clamp(15px, 1.4vw, 20px);
-      line-height: 1.25;
-      letter-spacing: -.015em;
-    }
-
-    .drag-note {
-      position: absolute;
-      z-index: 8;
-      top: 29px;
-      right: clamp(18px, 4vw, 64px);
-      margin: 0;
-      padding: 5px 8px 4px;
-      color: #fff;
-      background: var(--blue);
-      font-family: "Courier New", monospace;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .motion-toggle {
-      position: absolute;
-      z-index: 40;
-      top: 66px;
-      right: clamp(18px, 4vw, 64px);
-      min-width: 44px;
-      min-height: 44px;
-      padding: 8px 10px;
-      color: var(--ink);
-      border: 1px solid var(--ink);
-      border-radius: 0;
-      background: var(--paper);
-      cursor: pointer;
-      font-family: "Courier New", monospace;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .motion-toggle:hover,
-    .motion-toggle[aria-pressed="true"] { color: #fff; background: var(--ink); }
-
     .hero-title {
       position: absolute;
       z-index: 4;
@@ -216,46 +167,10 @@
       transform: rotate(8deg) translate(.06em, -.04em);
     }
 
-    .side-code {
-      position: absolute;
-      z-index: 3;
-      right: clamp(18px, 3vw, 44px);
-      bottom: 22px;
-      margin: 0;
-      color: var(--muted);
-      font-family: "Courier New", monospace;
-      font-size: 11px;
-      line-height: 1.35;
-      text-align: right;
-    }
-
-    .corner-mark {
-      position: absolute;
-      z-index: 3;
-      bottom: 24px;
-      left: clamp(18px, 3vw, 44px);
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      font-size: 12px;
-      font-weight: 650;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .corner-mark::before {
-      width: 10px;
-      height: 10px;
-      content: "";
-      border-radius: 50%;
-      background: var(--coral);
-      box-shadow: 0 0 0 5px rgba(255,118,93,.22);
-    }
-
     .float-stage {
       position: absolute;
       z-index: 6;
-      inset: 102px 18px 48px;
+      inset: 24px 18px;
       overflow: hidden;
       pointer-events: none;
     }
@@ -498,15 +413,14 @@
       line-height: 1.4;
     }
 
+    .footer span { text-align: right; }
+
     @media (max-width: 860px) {
-      .masthead { grid-template-columns: 1fr auto; }
-      .masthead__center { display: none; }
+      .masthead { grid-template-columns: auto 1fr auto; gap: 12px; font-size: 9px; }
+      .masthead__center { display: block; text-align: center; }
       .hero { min-height: 610px; }
-      .intro { width: min(460px, calc(100% - 36px)); }
-      .drag-note { top: 75px; }
-      .motion-toggle { top: 106px; }
       .hero-title { font-size: clamp(68px, 16.5vw, 132px); line-height: .78; }
-      .float-stage { inset: 146px 12px 48px; }
+      .float-stage { inset: 18px 12px; }
       .version-grid { grid-template-columns: 1fr; }
       .version-link { min-height: 140px; border-right: 0; border-bottom: 1px solid var(--ink); }
       .version-link:last-child { border-bottom: 0; }
@@ -515,21 +429,17 @@
 
     @media (max-width: 560px) {
       body { background: var(--paper); }
-      .masthead { min-height: 54px; padding: 10px 14px; font-size: 10px; }
+      .masthead { grid-template-columns: 1fr auto; min-height: 66px; padding: 10px 14px; font-size: 9px; }
+      .masthead__center { grid-row: 2; grid-column: 1 / -1; justify-self: start; text-align: left; }
       .masthead__right { text-align: right; }
       .hero { min-height: 590px; }
       .hero::after { width: 2px; }
-      .intro { top: 20px; left: 14px; font-size: 14px; }
-      .drag-note { top: 70px; right: 14px; font-size: 10px; }
-      .motion-toggle { top: 102px; right: 14px; min-height: 40px; }
       .hero-title { top: 49%; width: 100%; font-size: clamp(58px, 19vw, 92px); line-height: .82; }
       .hero-title__line { white-space: normal; }
       .hero-title__line:first-child { white-space: nowrap; }
-      .float-stage { inset: 142px 8px 45px; }
+      .float-stage { inset: 12px 8px; }
       .token--one { left: 46%; }
       .token--two, .token--three { display: none; }
-      .corner-mark { bottom: 16px; font-size: 10px; }
-      .side-code { display: none; }
       .versions { padding: 0 14px 22px; }
       .versions__heading { display: block; min-height: 64px; }
       .versions__heading span:last-child { display: block; margin-top: 6px; }
@@ -554,16 +464,12 @@
 
   <main class="page">
     <header class="masthead" aria-label="Project information">
-      <span>Tech B · CAPTCHA Study</span>
-      <span class="masthead__center">Three interfaces / one question</span>
-      <span class="masthead__right">Interactive archive · 2026</span>
+      <span>Tech B</span>
+      <span class="masthead__center">Project 1: Epistemological Research of Technology</span>
+      <span class="masthead__right">Andrea Cheng</span>
     </header>
 
     <section class="hero" aria-labelledby="page-title">
-      <p class="intro">Three versions reveal, soften, or hide how a system interprets the traces you leave behind.</p>
-      <p class="drag-note">Drag · Resize · Collide</p>
-      <button class="motion-toggle" id="motion-toggle" type="button" aria-pressed="false">Pause drift</button>
-
       <h1 class="hero-title" id="page-title">
         <span class="hero-title__line">Are you</span>
         <span class="hero-title__line hero-title__line--middle">human</span>
@@ -577,8 +483,6 @@
       <span class="token token--two" aria-hidden="true">VERIFY?</span>
       <span class="token token--three" aria-hidden="true">✓</span>
 
-      <p class="corner-mark">Local behavior study</p>
-      <p class="side-code">INPUT: IMAGE + ACTION<br>OUTPUT: REPRESENTATION</p>
     </section>
 
     <section class="versions" id="versions" aria-labelledby="versions-title">
@@ -609,7 +513,7 @@
 
       <footer class="footer">
         <strong>Are You Human Enough?</strong>
-        <span>An interactive CAPTCHA study about systems of representation.</span>
+        <span>Copyright © 2026 Andrea Cheng</span>
       </footer>
     </section>
   </main>
@@ -664,7 +568,6 @@
     ];
 
     const stage = document.querySelector("#float-stage");
-    const motionToggle = document.querySelector("#motion-toggle");
     const spriteStatus = document.querySelector("#sprite-status");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sprites = [];
@@ -977,19 +880,9 @@
       window.requestAnimationFrame(animate);
     }
 
-    function syncMotionButton() {
-      motionToggle.setAttribute("aria-pressed", String(autoPaused));
-      motionToggle.textContent = autoPaused ? "Resume drift" : "Pause drift";
-    }
-
-    motionToggle.addEventListener("click", () => {
-      autoPaused = !autoPaused;
-      syncMotionButton();
-    });
-
     reducedMotion.addEventListener("change", event => {
       if (event.matches) autoPaused = true;
-      syncMotionButton();
+      else autoPaused = false;
     });
 
     window.addEventListener("resize", () => {
@@ -1007,7 +900,6 @@
     });
 
     for (let index = 0; index < Math.min(FLOAT_CONFIG.initialCount, maxSprites()); index += 1) createSprite();
-    syncMotionButton();
     window.requestAnimationFrame(animate);
   </script>
 </body>
