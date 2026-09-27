@@ -63,6 +63,18 @@
 
     .skip-link:focus { transform: translateY(0); }
 
+    .sr-status {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .page {
       position: relative;
       min-height: 100dvh;
@@ -145,6 +157,28 @@
       text-transform: uppercase;
     }
 
+    .motion-toggle {
+      position: absolute;
+      z-index: 40;
+      top: 66px;
+      right: clamp(18px, 4vw, 64px);
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px 10px;
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      border-radius: 0;
+      background: var(--paper);
+      cursor: pointer;
+      font-family: "Courier New", monospace;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .motion-toggle:hover,
+    .motion-toggle[aria-pressed="true"] { color: #fff; background: var(--ink); }
+
     .hero-title {
       position: absolute;
       z-index: 4;
@@ -218,65 +252,106 @@
       box-shadow: 0 0 0 5px rgba(255,118,93,.22);
     }
 
-    .float-object {
-      --drag-x: 0px;
-      --drag-y: 0px;
+    .float-stage {
       position: absolute;
       z-index: 6;
-      transform: translate3d(var(--drag-x), var(--drag-y), 0);
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .float-object.is-dragging { z-index: 20; }
-
-    .drift {
-      animation: drift var(--duration, 8s) var(--delay, 0s) ease-in-out infinite alternate;
-      will-change: transform;
-    }
-
-    .float-object:focus-within .drift,
-    .float-object.is-dragging .drift {
-      animation-play-state: paused;
-    }
-
-    .drag-card {
-      display: block;
-      width: var(--card-width, 250px);
-      margin: 0;
-      padding: 0;
+      inset: 102px 18px 48px;
       overflow: hidden;
-      border: 1px solid rgba(12,12,12,.68);
-      border-radius: 0;
-      background: #fff;
-      box-shadow: 8px 9px 0 rgba(12,12,12,.13);
-      cursor: grab;
-      transform: rotate(var(--rotation, 0deg));
-      transition: box-shadow 180ms var(--ease), transform 180ms var(--ease);
-    }
-
-    .float-object.is-dragging .drag-card {
-      cursor: grabbing;
-      box-shadow: 14px 18px 0 rgba(12,12,12,.17);
-      transform: rotate(var(--rotation, 0deg)) scale(1.035);
-    }
-
-    .drag-card img {
-      display: block;
-      width: 100%;
-      height: auto;
       pointer-events: none;
     }
 
-    .float-a { top: 17%; left: 6%; --card-width: clamp(160px, 17vw, 255px); --rotation: -7deg; --duration: 7.2s; }
-    .float-b { top: 9%; right: 9%; --card-width: clamp(180px, 20vw, 290px); --rotation: 5deg; --duration: 9.4s; --delay: -2.2s; }
-    .float-c { right: 15%; bottom: 10%; --card-width: clamp(150px, 16vw, 235px); --rotation: -4deg; --duration: 8.3s; --delay: -4s; }
-    .float-d { bottom: 8%; left: 20%; --card-width: clamp(135px, 14vw, 210px); --rotation: 8deg; --duration: 10.6s; --delay: -6s; }
+    .float-object {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      will-change: transform;
+    }
 
-    @keyframes drift {
-      from { transform: translate3d(-5px, -9px, 0); }
-      to { transform: translate3d(12px, 13px, 0); }
+    .float-object.is-dragging,
+    .float-object.is-resizing { z-index: 24; }
+
+    .sprite-body {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      cursor: grab;
+    }
+
+    .float-object.is-dragging .sprite-body { cursor: grabbing; }
+
+    .sprite-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      transform-origin: center;
+    }
+
+    .float-object.is-resizable .sprite-body::after {
+      position: absolute;
+      inset: -7px;
+      content: "";
+      border: 1px solid var(--blue);
+      pointer-events: none;
+    }
+
+    .scale-node {
+      position: absolute;
+      z-index: 2;
+      display: none;
+      width: 9px;
+      height: 9px;
+      border: 1px solid #fff;
+      background: var(--blue);
+      pointer-events: none;
+    }
+
+    .float-object.is-resizable .scale-node { display: block; }
+    .scale-node--nw { top: -11px; left: -11px; }
+    .scale-node--ne { top: -11px; right: -11px; }
+    .scale-node--sw { bottom: -11px; left: -11px; }
+    .scale-node--se { right: -11px; bottom: -11px; }
+
+    .resize-handle {
+      position: absolute;
+      z-index: 4;
+      right: -22px;
+      bottom: -22px;
+      display: none;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: nwse-resize;
+      touch-action: none;
+    }
+
+    .float-object.is-resizable .resize-handle { display: block; }
+    .float-object.is-morphing .sprite-image { animation: morph-pop 420ms var(--ease); }
+    .float-object.is-spinning .sprite-image { animation: spin-z 1.15s cubic-bezier(.22,.75,.2,1); }
+
+    @keyframes morph-pop {
+      0% { transform: scale(1); filter: contrast(1); }
+      45% { transform: scale(.72); filter: contrast(1.7); }
+      100% { transform: scale(1); filter: contrast(1); }
+    }
+
+    @keyframes spin-z {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     .token {
@@ -429,11 +504,9 @@
       .hero { min-height: 610px; }
       .intro { width: min(460px, calc(100% - 36px)); }
       .drag-note { top: 75px; }
+      .motion-toggle { top: 106px; }
       .hero-title { font-size: clamp(68px, 16.5vw, 132px); line-height: .78; }
-      .float-a { top: 27%; left: 2%; }
-      .float-b { top: 20%; right: 2%; }
-      .float-c { right: 4%; bottom: 13%; }
-      .float-d { left: 8%; bottom: 11%; }
+      .float-stage { inset: 146px 12px 48px; }
       .version-grid { grid-template-columns: 1fr; }
       .version-link { min-height: 140px; border-right: 0; border-bottom: 1px solid var(--ink); }
       .version-link:last-child { border-bottom: 0; }
@@ -448,13 +521,11 @@
       .hero::after { width: 2px; }
       .intro { top: 20px; left: 14px; font-size: 14px; }
       .drag-note { top: 70px; right: 14px; font-size: 10px; }
+      .motion-toggle { top: 102px; right: 14px; min-height: 40px; }
       .hero-title { top: 49%; width: 100%; font-size: clamp(58px, 19vw, 92px); line-height: .82; }
       .hero-title__line { white-space: normal; }
       .hero-title__line:first-child { white-space: nowrap; }
-      .float-a { top: 25%; left: -8%; --card-width: 150px; }
-      .float-b { top: 29%; right: -8%; --card-width: 164px; }
-      .float-c { right: -5%; bottom: 11%; --card-width: 150px; }
-      .float-d { left: -5%; bottom: 15%; --card-width: 140px; }
+      .float-stage { inset: 142px 8px 45px; }
       .token--one { left: 46%; }
       .token--two, .token--three { display: none; }
       .corner-mark { bottom: 16px; font-size: 10px; }
@@ -490,7 +561,8 @@
 
     <section class="hero" aria-labelledby="page-title">
       <p class="intro">Three versions reveal, soften, or hide how a system interprets the traces you leave behind.</p>
-      <p class="drag-note">Drag the evidence</p>
+      <p class="drag-note">Drag · Resize · Collide</p>
+      <button class="motion-toggle" id="motion-toggle" type="button" aria-pressed="false">Pause drift</button>
 
       <h1 class="hero-title" id="page-title">
         <span class="hero-title__line">Are you</span>
@@ -498,37 +570,8 @@
         <span class="hero-title__line">enough<span class="hero-title__question">?</span></span>
       </h1>
 
-      <div class="float-object float-a" data-float>
-        <div class="drift">
-          <button class="drag-card" type="button" aria-label="Draggable distorted code b4R9x. Use arrow keys to move it.">
-            <img src="v3/assets/0dc1529c-16b9-468f-b07f-c0e7bafd0dc7.png" width="1400" height="509" alt="Distorted blue verification code on a pink and yellow background" draggable="false">
-          </button>
-        </div>
-      </div>
-
-      <div class="float-object float-b" data-float>
-        <div class="drift">
-          <button class="drag-card" type="button" aria-label="Draggable distorted code T6n3A. Use arrow keys to move it.">
-            <img src="v3/assets/abcbc5a7-43f6-45c7-abec-39e03e3bf660.png" width="1400" height="499" alt="Distorted blue verification code on a cyan background" draggable="false">
-          </button>
-        </div>
-      </div>
-
-      <div class="float-object float-c" data-float>
-        <div class="drift">
-          <button class="drag-card" type="button" aria-label="Draggable distorted code c9W4r. Use arrow keys to move it.">
-            <img src="v3/assets/8614b08d-392f-467c-b7fc-413e03b638cb.png" width="1400" height="513" alt="Distorted purple verification code on a lavender background" draggable="false" loading="lazy">
-          </button>
-        </div>
-      </div>
-
-      <div class="float-object float-d" data-float>
-        <div class="drift">
-          <button class="drag-card" type="button" aria-label="Draggable distorted code p8D5v. Use arrow keys to move it.">
-            <img src="v3/assets/ad021b0e-6504-4356-b97a-c7ebb5337ecd.png" width="1400" height="499" alt="Distorted dark verification code on a multicolor background" draggable="false" loading="lazy">
-          </button>
-        </div>
-      </div>
+      <div class="float-stage" id="float-stage" aria-label="Interactive field of draggable CAPTCHA fragments"></div>
+      <p class="sr-status" id="sprite-status" role="status" aria-live="polite"></p>
 
       <span class="token token--one" aria-hidden="true">A9</span>
       <span class="token token--two" aria-hidden="true">VERIFY?</span>
@@ -574,90 +617,398 @@
   <script>
     "use strict";
 
-    const DRAG_CONFIG = Object.freeze({ keyboardStep: 12, clickRotation: 7 });
-    const floatingObjects = document.querySelectorAll("[data-float]");
+    const FLOAT_CONFIG = Object.freeze({
+      initialCount: 6,
+      maxDesktop: 9,
+      maxMobile: 5,
+      resizableCount: 2,
+      keyboardStep: 14,
+      resizeStep: 14,
+      minWidth: 90,
+      maxWidth: 285,
+      speedMin: 17,
+      speedMax: 34,
+      collisionCooldown: 950,
+      boundaryCooldown: 1700,
+      globalBirthCooldown: 650,
+      morphCooldown: 1800,
+      spinDelayMin: 4500,
+      spinDelayMax: 8500
+    });
 
-    floatingObjects.forEach((floatingObject, index) => {
-      const handle = floatingObject.querySelector(".drag-card");
+    const CAPTCHA_ASSETS = [
+      ["assets/home-floating/layer-01.png", 315, 130],
+      ["assets/home-floating/layer-02.png", 249, 71],
+      ["assets/home-floating/layer-03.png", 115, 52],
+      ["assets/home-floating/layer-04.png", 119, 74],
+      ["assets/home-floating/layer-05.png", 84, 44],
+      ["assets/home-floating/layer-06.png", 69, 37],
+      ["assets/home-floating/layer-07.png", 73, 65],
+      ["assets/home-floating/layer-08.png", 73, 40],
+      ["assets/home-floating/layer-09.png", 65, 31],
+      ["assets/home-floating/layer-10.png", 290, 83],
+      ["assets/home-floating/layer-11.png", 345, 100],
+      ["assets/home-floating/layer-12.png", 61, 23],
+      ["assets/home-floating/layer-13.png", 59, 23],
+      ["assets/home-floating/layer-14.png", 63, 26],
+      ["assets/home-floating/layer-15.png", 97, 44],
+      ["assets/home-floating/layer-16.png", 102, 32],
+      ["assets/home-floating/layer-17.png", 109, 37],
+      ["assets/home-floating/layer-18.png", 155, 39],
+      ["assets/home-floating/layer-19.png", 152, 70],
+      ["assets/home-floating/layer-20.png", 121, 34],
+      ["assets/home-floating/layer-21.png", 289, 25],
+      ["assets/home-floating/layer-22.png", 121, 29],
+      ["assets/home-floating/layer-23.png", 71, 32],
+      ["assets/home-floating/layer-24.png", 101, 44]
+    ];
+
+    const stage = document.querySelector("#float-stage");
+    const motionToggle = document.querySelector("#motion-toggle");
+    const spriteStatus = document.querySelector("#sprite-status");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sprites = [];
+    let lastFrame = performance.now();
+    let lastBirth = 0;
+    let nextSpin = lastFrame + randomBetween(FLOAT_CONFIG.spinDelayMin, FLOAT_CONFIG.spinDelayMax);
+    let autoPaused = reducedMotion.matches;
+
+    function randomBetween(min, max) { return min + Math.random() * (max - min); }
+    function maxSprites() { return window.innerWidth <= 560 ? FLOAT_CONFIG.maxMobile : FLOAT_CONFIG.maxDesktop; }
+    function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+
+    function chooseAsset(excludeIndex = -1) {
+      let index = Math.floor(Math.random() * CAPTCHA_ASSETS.length);
+      if (CAPTCHA_ASSETS.length > 1 && index === excludeIndex) index = (index + 1 + Math.floor(Math.random() * (CAPTCHA_ASSETS.length - 1))) % CAPTCHA_ASSETS.length;
+      return index;
+    }
+
+    function sizeForAsset(assetIndex, requestedWidth) {
+      const [, sourceWidth, sourceHeight] = CAPTCHA_ASSETS[assetIndex];
+      const responsiveMax = window.innerWidth <= 560
+        ? Math.min(150, stage.clientWidth * .38)
+        : Math.min(FLOAT_CONFIG.maxWidth, Math.max(150, stage.clientWidth * .24));
+      const width = clamp(requestedWidth || sourceWidth * .72, FLOAT_CONFIG.minWidth, responsiveMax);
+      return { width, height: Math.max(34, width * sourceHeight / sourceWidth) };
+    }
+
+    function randomVelocity() {
+      const angle = randomBetween(0, Math.PI * 2);
+      const speed = randomBetween(FLOAT_CONFIG.speedMin, FLOAT_CONFIG.speedMax);
+      return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
+    }
+
+    function positionLooksOpen(x, y, width, height) {
+      return sprites.every(sprite => x + width + 18 < sprite.x || x > sprite.x + sprite.width + 18 || y + height + 18 < sprite.y || y > sprite.y + sprite.height + 18);
+    }
+
+    function findSpawnPosition(width, height, preferredX, preferredY) {
+      const maxX = Math.max(0, stage.clientWidth - width);
+      const maxY = Math.max(0, stage.clientHeight - height);
+      let candidate = { x: clamp(preferredX ?? randomBetween(0, maxX), 0, maxX), y: clamp(preferredY ?? randomBetween(0, maxY), 0, maxY) };
+      for (let attempt = 0; attempt < 18; attempt += 1) {
+        if (positionLooksOpen(candidate.x, candidate.y, width, height)) break;
+        candidate = { x: randomBetween(0, maxX), y: randomBetween(0, maxY) };
+      }
+      return candidate;
+    }
+
+    function renderSprite(sprite) {
+      sprite.element.style.width = `${sprite.width}px`;
+      sprite.element.style.height = `${sprite.height}px`;
+      sprite.element.style.transform = `translate3d(${sprite.x}px, ${sprite.y}px, 0)`;
+    }
+
+    function clampSprite(sprite) {
+      sprite.x = clamp(sprite.x, 0, Math.max(0, stage.clientWidth - sprite.width));
+      sprite.y = clamp(sprite.y, 0, Math.max(0, stage.clientHeight - sprite.height));
+    }
+
+    function setAsset(sprite, assetIndex, announce = false) {
+      sprite.assetIndex = assetIndex;
+      const [src, sourceWidth, sourceHeight] = CAPTCHA_ASSETS[assetIndex];
+      sprite.image.src = src;
+      sprite.image.width = sourceWidth;
+      sprite.image.height = sourceHeight;
+      sprite.image.alt = `Distorted CAPTCHA fragment ${assetIndex + 1}`;
+      sprite.body.setAttribute("aria-label", `Draggable CAPTCHA fragment ${assetIndex + 1}. Arrow keys move it. Plus and minus resize it.`);
+      sprite.height = Math.max(34, sprite.width * sourceHeight / sourceWidth);
+      clampSprite(sprite);
+      sprite.element.classList.remove("is-morphing");
+      void sprite.element.offsetWidth;
+      sprite.element.classList.add("is-morphing");
+      window.setTimeout(() => sprite.element.classList.remove("is-morphing"), 430);
+      if (announce) spriteStatus.textContent = `Collision created CAPTCHA fragment ${assetIndex + 1}.`;
+    }
+
+    function morphSprite(sprite, now, announce = false) {
+      if (now < sprite.morphUntil) return;
+      sprite.morphUntil = now + FLOAT_CONFIG.morphCooldown;
+      setAsset(sprite, chooseAsset(sprite.assetIndex), announce);
+    }
+
+    function createSprite(preferredX, preferredY) {
+      if (sprites.length >= maxSprites()) return null;
+      const assetIndex = chooseAsset();
+      const size = sizeForAsset(assetIndex);
+      const position = findSpawnPosition(size.width, size.height, preferredX, preferredY);
+      const velocity = randomVelocity();
+      const element = document.createElement("div");
+      element.className = "float-object";
+      element.innerHTML = `
+        <button class="sprite-body" type="button">
+          <img class="sprite-image" draggable="false">
+          <span class="scale-node scale-node--nw" aria-hidden="true"></span>
+          <span class="scale-node scale-node--ne" aria-hidden="true"></span>
+          <span class="scale-node scale-node--sw" aria-hidden="true"></span>
+          <span class="scale-node scale-node--se" aria-hidden="true"></span>
+        </button>
+        <button class="resize-handle" type="button" aria-label="Resize CAPTCHA fragment"></button>`;
+      stage.appendChild(element);
+      const sprite = {
+        element,
+        body: element.querySelector(".sprite-body"),
+        image: element.querySelector(".sprite-image"),
+        resizeHandle: element.querySelector(".resize-handle"),
+        assetIndex,
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+        vx: velocity.vx,
+        vy: velocity.vy,
+        dragging: false,
+        resizing: false,
+        collisionUntil: 0,
+        boundaryUntil: 0,
+        morphUntil: 0
+      };
+      sprites.push(sprite);
+      setAsset(sprite, assetIndex);
+      attachInteractions(sprite);
+      refreshResizableSprites();
+      renderSprite(sprite);
+      return sprite;
+    }
+
+    function refreshResizableSprites() {
+      sprites.forEach((sprite, index) => sprite.element.classList.toggle("is-resizable", index < FLOAT_CONFIG.resizableCount));
+    }
+
+    function resizeSprite(sprite, nextWidth) {
+      const size = sizeForAsset(sprite.assetIndex, nextWidth);
+      sprite.width = size.width;
+      sprite.height = size.height;
+      clampSprite(sprite);
+      renderSprite(sprite);
+    }
+
+    function attachInteractions(sprite) {
       let pointerId = null;
-      let originX = 0;
-      let originY = 0;
       let startX = 0;
       let startY = 0;
-      let currentX = 0;
-      let currentY = 0;
-      let moved = false;
-      let extraRotation = 0;
+      let originX = 0;
+      let originY = 0;
+      let lastX = 0;
+      let lastY = 0;
+      let lastMoveAt = 0;
 
-      const renderPosition = () => {
-        floatingObject.style.setProperty("--drag-x", `${currentX}px`);
-        floatingObject.style.setProperty("--drag-y", `${currentY}px`);
-      };
-
-      const clampToViewport = (nextX, nextY) => {
-        const rect = floatingObject.getBoundingClientRect();
-        const baseLeft = rect.left - currentX;
-        const baseTop = rect.top - currentY;
-        const margin = 12;
-        return {
-          x: Math.min(window.innerWidth - margin - rect.width - baseLeft, Math.max(margin - baseLeft, nextX)),
-          y: Math.min(window.innerHeight - margin - rect.height - baseTop, Math.max(margin - baseTop, nextY))
-        };
-      };
-
-      handle.addEventListener("pointerdown", event => {
+      sprite.body.addEventListener("pointerdown", event => {
         if (event.button !== 0 && event.pointerType === "mouse") return;
         pointerId = event.pointerId;
-        originX = currentX;
-        originY = currentY;
-        startX = event.clientX;
-        startY = event.clientY;
-        moved = false;
-        floatingObject.classList.add("is-dragging");
-        handle.setPointerCapture(pointerId);
+        startX = lastX = event.clientX;
+        startY = lastY = event.clientY;
+        originX = sprite.x;
+        originY = sprite.y;
+        lastMoveAt = performance.now();
+        sprite.dragging = true;
+        sprite.element.classList.add("is-dragging");
+        sprite.body.setPointerCapture(pointerId);
       });
 
-      handle.addEventListener("pointermove", event => {
+      sprite.body.addEventListener("pointermove", event => {
         if (event.pointerId !== pointerId) return;
-        const deltaX = event.clientX - startX;
-        const deltaY = event.clientY - startY;
-        if (Math.hypot(deltaX, deltaY) > 4) moved = true;
-        const clamped = clampToViewport(originX + deltaX, originY + deltaY);
-        currentX = clamped.x;
-        currentY = clamped.y;
-        renderPosition();
+        const now = performance.now();
+        const elapsed = Math.max(16, now - lastMoveAt) / 1000;
+        const rawX = originX + event.clientX - startX;
+        const rawY = originY + event.clientY - startY;
+        sprite.x = rawX;
+        sprite.y = rawY;
+        sprite.vx = clamp((event.clientX - lastX) / elapsed, -110, 110);
+        sprite.vy = clamp((event.clientY - lastY) / elapsed, -110, 110);
+        lastX = event.clientX;
+        lastY = event.clientY;
+        lastMoveAt = now;
+        clampSprite(sprite);
+        renderSprite(sprite);
+        if ((sprite.x !== rawX || sprite.y !== rawY) && now >= sprite.boundaryUntil) {
+          sprite.boundaryUntil = now + FLOAT_CONFIG.boundaryCooldown;
+          produceNewImage(sprite.x, sprite.y, sprite, now, true);
+        }
+        resolveCollisions(now);
       });
 
       const finishDrag = event => {
         if (event.pointerId !== pointerId) return;
-        if (handle.hasPointerCapture(pointerId)) handle.releasePointerCapture(pointerId);
-        floatingObject.classList.remove("is-dragging");
+        if (sprite.body.hasPointerCapture(pointerId)) sprite.body.releasePointerCapture(pointerId);
+        sprite.dragging = false;
+        sprite.element.classList.remove("is-dragging");
         pointerId = null;
-        if (!moved) {
-          extraRotation += index % 2 ? -DRAG_CONFIG.clickRotation : DRAG_CONFIG.clickRotation;
-          handle.style.setProperty("--rotation", `${extraRotation + [-7, 5, -4, 8][index]}deg`);
-        }
       };
+      sprite.body.addEventListener("pointerup", finishDrag);
+      sprite.body.addEventListener("pointercancel", finishDrag);
 
-      handle.addEventListener("pointerup", finishDrag);
-      handle.addEventListener("pointercancel", finishDrag);
-
-      handle.addEventListener("keydown", event => {
-        const movements = {
-          ArrowLeft: [-DRAG_CONFIG.keyboardStep, 0],
-          ArrowRight: [DRAG_CONFIG.keyboardStep, 0],
-          ArrowUp: [0, -DRAG_CONFIG.keyboardStep],
-          ArrowDown: [0, DRAG_CONFIG.keyboardStep]
-        };
-        if (!movements[event.key]) return;
-        event.preventDefault();
-        const [deltaX, deltaY] = movements[event.key];
-        const clamped = clampToViewport(currentX + deltaX, currentY + deltaY);
-        currentX = clamped.x;
-        currentY = clamped.y;
-        renderPosition();
+      sprite.body.addEventListener("keydown", event => {
+        const movement = {
+          ArrowLeft: [-FLOAT_CONFIG.keyboardStep, 0],
+          ArrowRight: [FLOAT_CONFIG.keyboardStep, 0],
+          ArrowUp: [0, -FLOAT_CONFIG.keyboardStep],
+          ArrowDown: [0, FLOAT_CONFIG.keyboardStep]
+        }[event.key];
+        if (movement) {
+          event.preventDefault();
+          sprite.x += movement[0];
+          sprite.y += movement[1];
+          clampSprite(sprite);
+          renderSprite(sprite);
+          resolveCollisions(performance.now());
+        } else if (["+", "="].includes(event.key)) {
+          event.preventDefault();
+          resizeSprite(sprite, sprite.width + FLOAT_CONFIG.resizeStep);
+        } else if (event.key === "-") {
+          event.preventDefault();
+          resizeSprite(sprite, sprite.width - FLOAT_CONFIG.resizeStep);
+        }
       });
+
+      let resizePointer = null;
+      let resizeStartX = 0;
+      let resizeStartWidth = 0;
+      sprite.resizeHandle.addEventListener("pointerdown", event => {
+        event.stopPropagation();
+        resizePointer = event.pointerId;
+        resizeStartX = event.clientX;
+        resizeStartWidth = sprite.width;
+        sprite.resizing = true;
+        sprite.element.classList.add("is-resizing");
+        sprite.resizeHandle.setPointerCapture(resizePointer);
+      });
+      sprite.resizeHandle.addEventListener("pointermove", event => {
+        if (event.pointerId !== resizePointer) return;
+        resizeSprite(sprite, resizeStartWidth + event.clientX - resizeStartX);
+      });
+      const finishResize = event => {
+        if (event.pointerId !== resizePointer) return;
+        if (sprite.resizeHandle.hasPointerCapture(resizePointer)) sprite.resizeHandle.releasePointerCapture(resizePointer);
+        sprite.resizing = false;
+        sprite.element.classList.remove("is-resizing");
+        resizePointer = null;
+      };
+      sprite.resizeHandle.addEventListener("pointerup", finishResize);
+      sprite.resizeHandle.addEventListener("pointercancel", finishResize);
+    }
+
+    function overlap(a, b) {
+      return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+    }
+
+    function produceNewImage(x, y, fallbackSprite, now, announce = false) {
+      if (sprites.length < maxSprites() && now - lastBirth >= FLOAT_CONFIG.globalBirthCooldown) {
+        lastBirth = now;
+        createSprite(x, y);
+      } else {
+        morphSprite(fallbackSprite, now, announce);
+      }
+    }
+
+    function resolveCollisions(now) {
+      for (let first = 0; first < sprites.length; first += 1) {
+        for (let second = first + 1; second < sprites.length; second += 1) {
+          const a = sprites[first];
+          const b = sprites[second];
+          if (!overlap(a, b) || now < a.collisionUntil || now < b.collisionUntil) continue;
+          a.collisionUntil = b.collisionUntil = now + FLOAT_CONFIG.collisionCooldown;
+          const aVelocity = { vx: a.vx, vy: a.vy };
+          if (!a.dragging) { a.vx = -b.vx || -a.vx; a.vy = -b.vy || -a.vy; }
+          if (!b.dragging) { b.vx = -aVelocity.vx || -b.vx; b.vy = -aVelocity.vy || -b.vy; }
+          const dragged = a.dragging ? a : b.dragging ? b : null;
+          produceNewImage((a.x + b.x) / 2, (a.y + b.y) / 2, dragged || a, now, Boolean(dragged));
+        }
+      }
+    }
+
+    function animate(now) {
+      const elapsed = Math.min(.04, (now - lastFrame) / 1000 || 0);
+      lastFrame = now;
+      if (!autoPaused && !document.hidden) {
+        sprites.forEach(sprite => {
+          const focused = sprite.element.contains(document.activeElement);
+          if (sprite.dragging || sprite.resizing || focused) return;
+          sprite.x += sprite.vx * elapsed;
+          sprite.y += sprite.vy * elapsed;
+          let hitBoundary = false;
+          if (sprite.x <= 0 || sprite.x + sprite.width >= stage.clientWidth) {
+            sprite.x = clamp(sprite.x, 0, Math.max(0, stage.clientWidth - sprite.width));
+            sprite.vx *= -1;
+            hitBoundary = true;
+          }
+          if (sprite.y <= 0 || sprite.y + sprite.height >= stage.clientHeight) {
+            sprite.y = clamp(sprite.y, 0, Math.max(0, stage.clientHeight - sprite.height));
+            sprite.vy *= -1;
+            hitBoundary = true;
+          }
+          if (hitBoundary && now >= sprite.boundaryUntil) {
+            sprite.boundaryUntil = now + FLOAT_CONFIG.boundaryCooldown;
+            produceNewImage(sprite.x, sprite.y, sprite, now);
+          }
+          renderSprite(sprite);
+        });
+        resolveCollisions(now);
+        if (now >= nextSpin && sprites.length) {
+          const candidates = sprites.filter(sprite => !sprite.dragging && !sprite.resizing);
+          const sprite = candidates[Math.floor(Math.random() * candidates.length)];
+          if (sprite) {
+            sprite.element.classList.add("is-spinning");
+            window.setTimeout(() => sprite.element.classList.remove("is-spinning"), 1200);
+          }
+          nextSpin = now + randomBetween(FLOAT_CONFIG.spinDelayMin, FLOAT_CONFIG.spinDelayMax);
+        }
+      }
+      window.requestAnimationFrame(animate);
+    }
+
+    function syncMotionButton() {
+      motionToggle.setAttribute("aria-pressed", String(autoPaused));
+      motionToggle.textContent = autoPaused ? "Resume drift" : "Pause drift";
+    }
+
+    motionToggle.addEventListener("click", () => {
+      autoPaused = !autoPaused;
+      syncMotionButton();
     });
+
+    reducedMotion.addEventListener("change", event => {
+      if (event.matches) autoPaused = true;
+      syncMotionButton();
+    });
+
+    window.addEventListener("resize", () => {
+      while (sprites.length > maxSprites()) {
+        const sprite = sprites.pop();
+        sprite.element.remove();
+      }
+      sprites.forEach(sprite => {
+        const responsiveMax = window.innerWidth <= 560 ? Math.min(150, stage.clientWidth * .38) : FLOAT_CONFIG.maxWidth;
+        if (sprite.width > responsiveMax) resizeSprite(sprite, responsiveMax);
+        clampSprite(sprite);
+        renderSprite(sprite);
+      });
+      refreshResizableSprites();
+    });
+
+    for (let index = 0; index < Math.min(FLOAT_CONFIG.initialCount, maxSprites()); index += 1) createSprite();
+    syncMotionButton();
+    window.requestAnimationFrame(animate);
   </script>
 </body>
 </html>
